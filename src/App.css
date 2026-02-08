@@ -1,0 +1,156 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+}
+
+.container {
+  width: 400px;
+  min-height: 300px;
+  padding: 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+h1 {
+  font-size: 24px;
+  margin-bottom: 20px;
+  text-align: center;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.url-display {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  backdrop-filter: blur(10px);
+}
+
+.url-display strong {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.url-text {
+  word-break: break-all;
+  font-size: 14px;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 8px;
+  border-radius: 4px;
+  font-family: 'Courier New', monospace;
+}
+
+.status {
+  background: white;
+  color: #333;
+  padding: 20px;
+  border-radius: 12px;
+  text-align: center;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.status h2 {
+  font-size: 28px;
+  margin-bottom: 10px;
+}
+
+.status.safe {
+  background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+}
+
+.status.safe h2 {
+  color: #059669;
+}
+
+.status.dangerous {
+  background: linear-gradient(135deg, #ffeaa7 0%, #fab1a0 100%);
+}
+
+.status.dangerous h2 {
+  color: #dc2626;
+}
+
+.status.error {
+  background: #fee;
+}
+
+.status.error h2 {
+  color: #dc2626;
+}
+
+.status.loading {
+  background: rgba(255, 255, 255, 0.9);
+  min-height: 150px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.verdict {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 15px 0;
+}
+
+.confidence {
+  font-size: 14px;
+  color: #666;
+  margin: 10px 0;
+}
+
+.hint {
+  font-size: 12px;
+  color: #666;
+  margin: 10px 0;
+  font-style: italic;
+}
+
+button {
+  margin-top: 15px;
+  padding: 10px 24px;
+  background: #667eea;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+button:hover {
+  background: #5568d3;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+button:active {
+  transform: translateY(0);
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(102, 126, 234, 0.2);
+  border-top-color: #667eea;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+

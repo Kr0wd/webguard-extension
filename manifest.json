@@ -1,0 +1,40 @@
+{
+  "manifest_version": 3,
+  "name": "URL Safety Checker",
+  "version": "1.0.0",
+  "description": "Checks if the current URL is dangerous using ML model",
+  "action": {
+    "default_popup": "index.html",
+    "default_icon": {
+      "16": "vite.svg",
+      "48": "vite.svg",
+      "128": "vite.svg"
+    }
+  },
+  "background": {
+    "service_worker": "assets/background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "assets/content.js"
+      ]
+    }
+  ],
+  "host_permissions": [
+    "http://localhost:5000/*"
+  ],
+  "permissions": [
+    "activeTab",
+    "tabs",
+    "scripting"
+  ],
+  "icons": {
+    "16": "vite.svg",
+    "48": "vite.svg",
+    "128": "vite.svg"
+  }
+}

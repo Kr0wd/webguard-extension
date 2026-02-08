@@ -120,7 +120,7 @@ def predict():
         reason = "Safe"
         
         # Whitelist
-        safe_domains = ['google.com', 'youtube.com', 'wikipedia.org', 'amazon.com', 'github.com', 'stackoverflow.com', 'weather.com', 'dev.to', 'facebook.com', 'netflix.com']
+        safe_domains = ['google.com', 'youtube.com', 'wikipedia.org', 'amazon.com', 'github.com', 'stackoverflow.com', 'weather.com', 'dev.to', 'facebook.com', 'netflix.com', 'whatsapp.com', 'microsoft.com', 'apple.com']
         if any(d in url for d in safe_domains):
             is_dangerous = False
             reason = "Whitelisted"

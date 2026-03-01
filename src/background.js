@@ -1,13 +1,18 @@
-
 // Background Service Worker
 
 const API_URL = 'http://localhost:5000/predict';
+
+// Set of temporarily allowed URLs (so we don't block them again if the user clicks "Proceed")
+const allowedUrls = new Set();
 
 // Function to check URL safety
 async function checkUrl(url, tabId) {
     try {
         // Basic validation
         if (!url || !url.startsWith('http')) return;
+
+        // Check if the user has explicitly bypassed the warning for this URL
+        if (allowedUrls.has(url)) return;
 
         // Set badge to "..." while checking
         chrome.action.setBadgeText({ text: '...', tabId });
@@ -26,13 +31,13 @@ async function checkUrl(url, tabId) {
             chrome.action.setBadgeText({ text: '!', tabId });
             chrome.action.setBadgeBackgroundColor({ color: '#FF0000', tabId });
 
-            // Inject content script if not already present (declarative approach is better but this works for v3)
-            // Send message to content script
-            chrome.tabs.sendMessage(tabId, {
-                action: 'SHOW_WARNING',
-                reason: data.reason,
-                confidence: data.confidence
-            }).catch(err => console.log("Content script might not be ready:", err));
+            // Redirect the tab to our local block page instead of injecting content script
+            const blockUrl = chrome.runtime.getURL('block.html') +
+                `?url=${encodeURIComponent(url)}` +
+                `&reason=${encodeURIComponent(data.reason)}` +
+                `&confidence=${encodeURIComponent(data.confidence)}`;
+
+            chrome.tabs.update(tabId, { url: blockUrl });
 
         } else {
             // SAFE
@@ -61,4 +66,16 @@ chrome.tabs.onActivated.addListener((activeInfo) => {
             checkUrl(tab.url, activeInfo.tabId);
         }
     });
+});
+
+// Listen for messages from block.js to allow proceeding
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.action === 'ALLOW_URL') {
+        allowedUrls.add(message.url);
+        // Automatically remove the allowance after 5 minutes for security
+        setTimeout(() => {
+            allowedUrls.delete(message.url);
+        }, 5 * 60 * 1000);
+        sendResponse({ success: true });
+    }
 });

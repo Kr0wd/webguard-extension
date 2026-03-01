@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "build:extension": "vite build && cp manifest.json dist/",
+    "build:extension": "vite build && cp manifest.json dist/ && cp public/block.html dist/ && cp public/block.js dist/",
     "lint": "eslint .",
     "preview": "vite preview"
   },

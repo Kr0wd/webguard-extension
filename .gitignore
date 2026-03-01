@@ -48,3 +48,9 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
+
+# Large dataset files (exceed GitHub size limits)
+dataset_capec_combine.csv
+majestic_million.csv
+merged_urls_dataset.csv
+phishtank.csv

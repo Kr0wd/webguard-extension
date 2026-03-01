@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Warning: Malicious Site Blocked</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      width: 100vw;
+      height: 100vh;
+      background-color: rgba(255, 0, 0, 0.95);
+      backdrop-filter: blur(10px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-family: system-ui, -apple-system, sans-serif;
+      text-align: center;
+      overflow: hidden;
+    }
+    h1 { font-size: 3rem; margin-bottom: 20px; }
+    p { font-size: 1.5rem; margin-bottom: 10px; }
+    .conf { font-size: 1.2rem; margin-bottom: 30px; opacity: 0.8; }
+    .btn-container { display: flex; gap: 20px; }
+    button {
+      padding: 15px 30px;
+      font-size: 1.2rem;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    #go-back {
+      background-color: #fff;
+      color: #d00;
+      border: none;
+      font-weight: bold;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+    }
+    #proceed {
+      background-color: transparent;
+      color: #fff;
+      border: 2px solid #fff;
+      opacity: 0.7;
+    }
+  </style>
+</head>
+<body>
+  <h1>⚠️ WARNING: Dangerous Site Detected ⚠️</h1>
+  <p id="reason">Reason: Unknown</p>
+  <p class="conf" id="confidence">Confidence: 99.9%</p>
+  
+  <div class="btn-container">
+    <button id="go-back">Go Back (Recommended)</button>
+    <button id="proceed">Proceed (Unsafe)</button>
+  </div>
+
+  <script src="block.js"></script>
+</body>
+</html>

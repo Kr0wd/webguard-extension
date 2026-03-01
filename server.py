@@ -1,94 +1,101 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-import pickle
+import pandas as pd
 import joblib
 import numpy as np
 import os
-import sys
 import re
 from urllib.parse import unquote
 import tensorflow as tf
 from tensorflow.keras.models import load_model, Model
-from tensorflow.keras.layers import Input, Lambda, Embedding, LSTM, Dense
+from tensorflow.keras.layers import Input, Lambda, Embedding, LSTM, Dense, Bidirectional
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 import tensorflow.keras.backend as K
+from tensorflow.keras.utils import custom_object_scope
 
 # Initialize the Flask application
 app = Flask(__name__)
-CORS(app)  # Enable Cross-Origin Resource Sharing so the extension can talk to this server
+CORS(app)  # Enable Cross-Origin Resource Sharing
 
 # --- CONFIG ---
-# Maximum length of URL sequence to consider for the Deep Learning models
 MAX_LEN = 500
-# Allow loading of Keras models that might have custom layers or older formats
 tf.keras.config.enable_unsafe_deserialization()
-
-# --- PATHS ---
-# Get the directory where this script is located
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# Helper function to find model files. 
-# It checks both a 'public' subdirectory and the current directory.
 def get_path(filename):
     p1 = os.path.join(BASE_DIR, 'public', filename)
     p2 = os.path.join(BASE_DIR, filename)
     return p1 if os.path.exists(p1) else p2
 
+# --- URL NORMALIZATION & SHIELD LOGIC ---
+def strip_protocol(url):
+    """Removes http:// and https:// to normalize the URL"""
+    url = str(url).strip()
+    url = re.sub(r'^https?://', '', url)
+    url = re.sub(r'^www\.', '', url)
+    return url
+
+print("🛡️ Loading Majestic Top 1 Million Whitelist into memory...")
+try:
+    df_benign = pd.read_csv(get_path("majestic_million.csv"))
+    # O(1) Hash Map for instant lookups
+    WHITELIST_SET = set(df_benign['Domain'].dropna().str.lower().tolist())
+    
+    # Add safe local IPs and CUSTOM INTERNAL DOMAINS
+    WHITELIST_SET.update([
+        "192.168.1.1", "192.168.1.254", "localhost", "127.0.0.1",
+        "fisat.ac.in", "intranet.fisat.ac.in", "app.ktu.edu.in", "ktu.edu.in"
+    ])
+    print(f"✅ Loaded {len(WHITELIST_SET)} trusted domains into the shield.")
+except Exception as e:
+    print(f"⚠️ Could not load CSV, falling back to basic whitelist: {e}")
+    WHITELIST_SET = {"google.com", "amazon.com", "github.com", "myntra.com", "fisat.ac.in", "intranet.fisat.ac.in"}
+
+def is_whitelisted(url):
+    """Safely extracts the true root domain and checks the O(1) Set"""
+    clean_url = strip_protocol(url)
+    # Extract just the root domain (everything before the first '/')
+    root_domain = clean_url.split('/')[0].lower()
+    return root_domain in WHITELIST_SET
+
 # --- REBUILD META-MODEL ARCHITECTURE ---
-# Neural Networks sometimes need their architecture defined in code to load weights correctly.
-# This defines a "Siamese Network" (or comparison network) used for the Meta Model.
 def build_meta_model(vocab_size):
-    # Inputs for two different sequences (e.g., the URL to test vs a known bad signature)
     input_a = Input(shape=(MAX_LEN,))
     input_b = Input(shape=(MAX_LEN,))
     input_seq = Input(shape=(MAX_LEN,))
     
-    # Shared layers to process both inputs identically
-    # Embedding layer: Turns integer numbers (characters/words) into dense vectors
-    x = Embedding(vocab_size, 32)(input_seq)
-    # LSTM layer: specialized for sequence data (like text/URLs)
-    x = LSTM(64)(x)
-    x = Dense(32, activation='relu')(x)
+    x = Embedding(vocab_size, 128)(input_seq)
+    x = Bidirectional(LSTM(64, return_sequences=False))(x)
+    x = Dense(64, activation='relu')(x)
     
-    # Create the base encoder model
     base = Model(input_seq, x)
-    
-    # Process both inputs through the base model
     vec_a = base(input_a)
     vec_b = base(input_b)
     
-    # Calculate the absolute difference between the two vector representations
     def abs_diff(t): return K.abs(t[0] - t[1])
     def compute_output_shape(shapes): return shapes[0]
     dist = Lambda(abs_diff, output_shape=compute_output_shape)([vec_a, vec_b])
     
-    # Final output layer: A sigmoid classifier (0 to 1) 
-    # Determines how "similar" the inputs are (or if they belong to the same class)
     out = Dense(1, activation='sigmoid')(dist)
     return Model([input_a, input_b], out)
 
 # --- LOAD RESOURCES ---
 print("🚀 Initializing WebGuard Hybrid Engine...")
 try:
-    # Load the preprocessing tools
-    tokenizer = joblib.load(get_path('local_tokenizer.pkl'))       # Converts text -> numbers
-    le = joblib.load(get_path('local_label_encoder.pkl'))          # Converts numbers -> class names (e.g. 'phishing')
-    vectorizer = joblib.load(get_path('local_vectorizer.pkl'))     # Converts text -> matrix for SVM
+    tokenizer = joblib.load(get_path('local_tokenizer.pkl'))       
+    le = joblib.load(get_path('local_label_encoder.pkl'))          
+    vectorizer = joblib.load(get_path('local_vectorizer.pkl'))     
     
-    # Load the Machine Learning models
-    svm = joblib.load(get_path('local_svm_model.pkl'))             # Support Vector Machine (Classical ML)
-    cnn_model = load_model(get_path('local_best_cnn.keras'), safe_mode=False) # Convolutional Neural Network (Deep Learning)
+    svm = joblib.load(get_path('local_svm_model.pkl'))             
+    cnn_model = load_model(get_path('local_best_cnn.keras'), safe_mode=False) 
     
-    # Initialize and load the Meta Model (Deep Learning)
     vocab_size = len(tokenizer.word_index) + 1
     meta_model = build_meta_model(vocab_size)
     meta_model.load_weights(get_path('local_meta_model.keras'))
     
-    # Identify which class index represents "Normal" / "Safe" traffic
-    normal_class = 'Normal'
-    if 'Normal' not in le.classes_: 
-        normal_class = 'benign' if 'benign' in le.classes_ else le.classes_[0]
-    normal_idx = list(le.classes_).index(normal_class)
+    # Pre-calculate the SQLi signature sequence once to save API time
+    sig = "UNION SELECT * FROM users"
+    global_sig_seq = pad_sequences(tokenizer.texts_to_sequences([sig]), maxlen=MAX_LEN)
     
     print("✅ All Hybrid Models Loaded Successfully")
     model_loaded = True
@@ -97,25 +104,34 @@ except Exception as e:
     model_loaded = False
 
 # --- API ROUTES ---
-
 @app.route('/predict', methods=['POST'])
 def predict():
-    # Check if models are ready before processing
     if not model_loaded:
         return jsonify({'error': 'Models not loaded', 'is_dangerous': False}), 500
     
     try:
-        # Get the URL from the POST request data
         data = request.json
-        url = data.get('url', '')
-        if not url: return jsonify({'error': 'No URL provided'}), 400
+        raw_url = data.get('url', '')
+        if not raw_url: return jsonify({'error': 'No URL provided'}), 400
         
-        # --- HYBRID SCANNING LOGIC (V5) ---
-        decoded_url = unquote(url) # Decode URL encoding (e.g. %20 -> space)
-        rules_triggered = []
+        decoded_url = unquote(raw_url)
+        
+        # ==========================================
+        # LAYER 1: THE SHIELD (Whitelist)
+        # ==========================================
+        if is_whitelisted(decoded_url):
+            return jsonify({
+                'url': raw_url,
+                'is_dangerous': False,
+                'prediction': 0,
+                'confidence': 1.0,
+                'reason': "Whitelisted (Trusted Domain)"
+            })
 
-        # 1. Static Rules (Regex Checks)
-        # Check for common malicious patterns directly in the URL string
+        # ==========================================
+        # LAYER 2: STATIC HEURISTICS (Instant Flags)
+        # ==========================================
+        rules_triggered = []
         if re.search(r"<script>", decoded_url, re.IGNORECASE): rules_triggered.append("XSS")
         if re.search(r"javascript:", decoded_url, re.IGNORECASE): rules_triggered.append("XSS")
         if re.search(r"UNION SELECT", decoded_url, re.IGNORECASE): rules_triggered.append("SQLi")
@@ -124,82 +140,60 @@ def predict():
         if re.search(r"\.\./", decoded_url): rules_triggered.append("Traversal")
         if re.search(r"/etc/passwd", decoded_url): rules_triggered.append("Sensitive File") 
         if re.search(r"[;|]\s*(cat|ls|pwd|whoami|wget|curl)", decoded_url, re.IGNORECASE): rules_triggered.append("Command Injection") 
-        if re.search(r"\{\{.*\}\}", decoded_url): rules_triggered.append("SSTI")
-        if re.search(r"=\s*(http|https|ftp)://", decoded_url, re.IGNORECASE): rules_triggered.append("RFI")
+        
+        if rules_triggered:
+            return jsonify({
+                'url': raw_url,
+                'is_dangerous': True,
+                'prediction': 1,
+                'confidence': 1.0,
+                'reason': f"Rule Triggered: {rules_triggered[0]}"
+            })
 
-        # 2. AI Predictions
-        # Model 1: SVM (Support Vector Machine)
-        # Good at detecting keyword-based anomalies
-        try: svm_prob = float(svm.predict_proba(vectorizer.transform([url]))[0][1])
-        except: svm_prob = 0.0
+        # ==========================================
+        # LAYER 3: THE AI ENSEMBLE (Tuned for False Positives)
+        # ==========================================
+        clean_url = strip_protocol(decoded_url)
+        
+        # 1. SVM Gatekeeper (Requires 70% confidence to vote Block)
+        try: 
+            X_vec = vectorizer.transform([clean_url])
+            svm_pred_raw = svm.predict(X_vec)
+            svm_conf = float(np.max(svm.predict_proba(X_vec)))
+            svm_binary = 1 if (le.inverse_transform(svm_pred_raw)[0] != 'Normal' and svm_conf > 0.70) else 0
+        except: 
+            svm_binary, svm_conf = 0, 0.0
 
-        # Model 2: CNN (Convolutional Neural Network)
-        # Good at detecting patterns in character sequences
-        seq = pad_sequences(tokenizer.texts_to_sequences([url]), maxlen=MAX_LEN)
+        # 2. CNN Deep Pattern (Requires 85% confidence to vote Block)
+        seq = pad_sequences(tokenizer.texts_to_sequences([clean_url]), maxlen=MAX_LEN)
         dl_pred = cnn_model.predict(seq, verbose=0)[0]
-        dl_conf = float(np.max(dl_pred)) # Confidence of the top prediction
-        dl_class_idx = np.argmax(dl_pred) # The class it thinks it is
-        is_dl_attack = (dl_class_idx != normal_idx) # Is it NOT normal?
-        attack_type = le.inverse_transform([dl_class_idx])[0] # Get the text name of the attack
+        dl_conf = float(np.max(dl_pred))
+        dl_class_idx = np.argmax(dl_pred)
+        attack_type = le.inverse_transform([dl_class_idx])[0]
+        
+        # Only vote 'Block' if it's NOT Normal AND it is very sure about it
+        cnn_binary = 1 if (attack_type != 'Normal' and dl_conf > 0.85) else 0
 
-        # Model 3: Meta Model (Anomaly / Signature Comparison)
-        # Checks similarity to a known SQL Injection signature
-        sig = "UNION SELECT * FROM users"
-        seq_sig = pad_sequences(tokenizer.texts_to_sequences([sig]), maxlen=MAX_LEN)
-        meta_sim = float(meta_model.predict([seq, seq_sig], verbose=0)[0][0])
+        # 3. Siamese Meta-Model (Requires 80% anomaly similarity to vote Block)
+        sig_batch = np.repeat(global_sig_seq, len(seq), axis=0)
+        meta_sim = float(meta_model.predict([seq, sig_batch], verbose=0)[0][0])
+        meta_binary = 1 if meta_sim > 0.80 else 0
 
-        # 3. Decision Logic (Combining all signals)
-        is_dangerous = False
+        # --- THE VOTING COMMITTEE ---
+        # If 2 out of 3 models flag it with HIGH CONFIDENCE, block it.
+        total_votes = svm_binary + cnn_binary + meta_binary
+        is_dangerous = bool(total_votes >= 2)
+        
         reason = "Safe"
-        
-        # Hardcoded Whitelist (Always Safe)
-        safe_domains = [
-            'google.com', 'youtube.com', 'wikipedia.org', 'amazon.com', 'github.com', 
-            'stackoverflow.com', 'weather.com', 'dev.to', 'facebook.com', 
-            'netflix.com', 'whatsapp.com', 'microsoft.com', 'apple.com',
-            'chrome.com', 'shazam.com', 'instagram.com', 'linkedin.com', 'twitter.com', 'x.com', 
-            'twitch.tv', 'reddit.com', 'bing.com',
-            # Search & Social
-            'yahoo.com', 'duckduckgo.com', 'baidu.com', 'yandex.com',
-            'tiktok.com', 'pinterest.com', 'snapchat.com', 'telegram.org',
-            # Tech & Dev
-            'gitlab.com', 'bitbucket.org', 'npm.com', 'pypi.org', 'docker.com',
-            'azure.com', 'salesforce.com', 'oracle.com', 'ibm.com',
-            # Media & News
-            'cnn.com', 'bbc.com', 'nytimes.com', 'theguardian.com', 'forbes.com', 'bloomberg.com',
-            # Shopping & Payment
-            'ebay.com', 'walmart.com', 'target.com', 'bestbuy.com', 'aliexpress.com',
-            'paypal.com', 'stripe.com',
-            # Other
-            'spotify.com', 'adobe.com', 'dropbox.com', 'zoom.us'
-        ]
-        
-        if any(d in url for d in safe_domains):
-            is_dangerous = False
-            reason = "Whitelisted"
-        elif rules_triggered:
-            # If a strict rule matches, flag immediately
-            is_dangerous = True
-            reason = f"Rule: {rules_triggered[0]}"
-        elif svm_prob < 0.05: 
-            # If SVM thinks it's very safe, only override if Deep Learning is extremely confident
-            # This reduces false positives on normal looking URLs
-            if is_dl_attack and dl_conf > 0.99: 
-                is_dangerous = True; reason = f"AI: High Confidence {attack_type}"
-            elif meta_sim > 0.90: 
-                is_dangerous = True; reason = "AI: Zero-Day Anomaly"
-        else:
-            # General voting logic
-            if is_dl_attack and dl_conf > 0.8: is_dangerous = True; reason = f"AI: {attack_type}"
-            elif svm_prob > 0.80: is_dangerous = True; reason = "AI: Heuristic"
-            elif meta_sim > 0.80: is_dangerous = True; reason = "AI: Anomaly"
+        if is_dangerous:
+            if cnn_binary == 1: reason = f"AI Blocked: {attack_type}"
+            else: reason = "AI Blocked: Zero-Day Anomaly"
 
-        # Return the final JSON result
         return jsonify({
-            'url': url,
+            'url': raw_url,
             'is_dangerous': is_dangerous,
-            'prediction': 1 if is_dangerous else 0, # Legacy support
-            'confidence': max(svm_prob, dl_conf, meta_sim),
+            'prediction': 1 if is_dangerous else 0,
+            'confidence': max(svm_conf, dl_conf, meta_sim),
             'reason': reason
         })
 
@@ -207,15 +201,10 @@ def predict():
         print(f"Prediction error: {e}")
         return jsonify({'error': str(e), 'is_dangerous': False}), 500
 
-# Health Check Endpoint
 @app.route('/health', methods=['GET'])
 def health():
-    return jsonify({
-        'status': 'ok',
-        'model_loaded': model_loaded
-    })
+    return jsonify({'status': 'ok', 'model_loaded': model_loaded})
 
-# Main entry point: Runs the server
 if __name__ == '__main__':
     print("Starting Hybrid Flask server on http://localhost:5000")
     app.run(debug=True, port=5000)

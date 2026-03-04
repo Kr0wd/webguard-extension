@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const maliciousUrl = urlParams.get('url');
     const reason = urlParams.get('reason');
     const conf = urlParams.get('confidence');
+    const goBackUrl = urlParams.get('goBack') || '';
 
     // Populate UI
     if (reason) {
@@ -16,28 +17,28 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('confidence').textContent = `Confidence: ${confPercent}%`;
     }
 
-    // Handle "Go Back"
+    // Handle "Go Back" — tell the background script to navigate the tab
+    // Using chrome.tabs.update from background avoids re-triggering the block
     document.getElementById('go-back').addEventListener('click', () => {
-        // Attempt to go back, if that fails (e.g., opened in new tab), close tab
-        if (window.history.length > 1) {
-            window.history.back();
-        } else {
-            window.close();
-        }
+        chrome.runtime.sendMessage({
+            action: 'GO_BACK',
+            goBackUrl: goBackUrl || 'chrome://newtab'
+        }, () => {
+            // Fallback: if sendMessage fails or goBackUrl is empty, open new tab
+            if (chrome.runtime.lastError || !goBackUrl) {
+                window.open('chrome://newtab', '_self');
+            }
+        });
     });
 
     // Handle "Proceed (Unsafe)"
     document.getElementById('proceed').addEventListener('click', () => {
         if (maliciousUrl) {
-            // Decode and redirect
             const decodedUrl = decodeURIComponent(maliciousUrl);
-
-            // We need to tell the background script to temporarily allow this URL
             chrome.runtime.sendMessage({
                 action: 'ALLOW_URL',
                 url: decodedUrl
             }, () => {
-                // After getting permission, redirect
                 window.location.href = decodedUrl;
             });
         }

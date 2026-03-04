@@ -2,8 +2,11 @@
 
 const API_URL = 'http://localhost:5000/predict';
 
-// Set of temporarily allowed URLs (so we don't block them again if the user clicks "Proceed")
+// Set of temporarily allowed URLs
 const allowedUrls = new Set();
+
+// Track the last known SAFE URL per tab so Go Back works correctly
+const lastSafeUrl = new Map();
 
 // Function to check URL safety
 async function checkUrl(url, tabId) {
@@ -27,20 +30,22 @@ async function checkUrl(url, tabId) {
         const data = await response.json();
 
         if (data.is_dangerous) {
-            // DANGEROUS
+            // DANGEROUS — redirect to block page, pass last safe URL for Go Back
             chrome.action.setBadgeText({ text: '!', tabId });
             chrome.action.setBadgeBackgroundColor({ color: '#FF0000', tabId });
 
-            // Redirect the tab to our local block page instead of injecting content script
+            const safeUrl = lastSafeUrl.get(tabId) || '';
             const blockUrl = chrome.runtime.getURL('block.html') +
                 `?url=${encodeURIComponent(url)}` +
                 `&reason=${encodeURIComponent(data.reason)}` +
-                `&confidence=${encodeURIComponent(data.confidence)}`;
+                `&confidence=${encodeURIComponent(data.confidence)}` +
+                `&goBack=${encodeURIComponent(safeUrl)}`;
 
             chrome.tabs.update(tabId, { url: blockUrl });
 
         } else {
-            // SAFE
+            // SAFE — save this URL so Go Back can return here
+            lastSafeUrl.set(tabId, url);
             chrome.action.setBadgeText({ text: 'OK', tabId });
             chrome.action.setBadgeBackgroundColor({ color: '#00CC00', tabId });
         }
@@ -68,14 +73,25 @@ chrome.tabs.onActivated.addListener((activeInfo) => {
     });
 });
 
-// Listen for messages from block.js to allow proceeding
+// Listen for messages from block.js
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === 'ALLOW_URL') {
         allowedUrls.add(message.url);
-        // Automatically remove the allowance after 5 minutes for security
-        setTimeout(() => {
-            allowedUrls.delete(message.url);
-        }, 5 * 60 * 1000);
+        setTimeout(() => { allowedUrls.delete(message.url); }, 5 * 60 * 1000);
         sendResponse({ success: true });
     }
+
+    if (message.action === 'GO_BACK') {
+        const tabId = sender.tab?.id;
+        if (!tabId) return;
+        // Navigate the tab directly — bypasses history to avoid re-triggering block
+        const goBackTarget = message.goBackUrl || 'chrome://newtab';
+        chrome.tabs.update(tabId, { url: goBackTarget });
+        sendResponse({ success: true });
+    }
+});
+
+// Clean up lastSafeUrl when a tab is closed
+chrome.tabs.onRemoved.addListener((tabId) => {
+    lastSafeUrl.delete(tabId);
 });

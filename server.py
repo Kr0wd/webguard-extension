@@ -50,6 +50,18 @@ def is_whitelisted(url):
     clean_url = strip_protocol(url)
     # Extract just the root domain (everything before the first '/')
     root_domain = clean_url.split('/')[0].lower()
+    # High-trust structural, regional, and government TLDs that are historically very safe
+    # This prevents local startups, Indian sites, and government pages from getting caught
+    # in the AI's length penalization or structure checks.
+    safe_tlds = (
+        '.gov.in', '.nic.in', '.edu.in', '.ac.in', '.res.in',
+        '.gov', '.edu', '.mil', '.int',
+        '.bank', '.creditunion',
+        '.in', '.co.in', '.club',
+    )
+
+    if root_domain.endswith(safe_tlds):
+        return True
     return root_domain in WHITELIST_SET
 
 
@@ -61,17 +73,10 @@ def calculate_entropy(text):
 
 
 TARGET_BRANDS = [
-    'paypal',
-    'ppl',
-    'apple',
-    'microsoft',
-    'netflix',
-    'amazon',
-    'bankofamerica',
-    'wellsfargo',
-    'chase',
-    'walmart',
-    'ebay']
+    'paypal', 'ppl', 'apple', 'microsoft', 'netflix',
+    'amazon', 'bankofamerica', 'wellsfargo', 'chase',
+    'walmart', 'ebay', 'google', 'facebook', 'youtube',
+    'instagram', 'twitter', 'linkedin', 'dropbox', 'spotify']
 HIGH_TRUST_DOMAINS = {
     'google.com',
     'youtube.com',
@@ -157,12 +162,52 @@ def extract_features(url):
     domain_part = c.split('/')[0].lower()
     domain_root = '.'.join(domain_part.split(
         '.')[-2:]) if '.' in domain_part else domain_part
+    # Domain stem = just the part before the TLD (e.g. "paypa1" from "paypa1.com")
+    domain_stem = domain_root.split('.')[0] if '.' in domain_root else domain_root
+
+    # Normalize digit-substitutions (0→o, 1→i/l, 3→e, 4→a) for fuzzy matching
+    _DIGIT_MAP = str.maketrans('013458', 'oieash')
+
+    def _normalize(s):
+        return s.translate(_DIGIT_MAP)
+
+    def _edit_dist(a, b):
+        """Fast Levenshtein distance for short strings."""
+        if abs(len(a) - len(b)) > 2:
+            return 99
+        dp = list(range(len(b) + 1))
+        for i, ca in enumerate(a):
+            ndp = [i + 1]
+            for j, cb in enumerate(b):
+                ndp.append(min(dp[j] + (ca != cb), dp[j + 1] + 1, ndp[-1] + 1))
+            dp = ndp
+        return dp[-1]
+
     is_brand_spoof = 0
+    # Exact substring check (original logic)
     for b in TARGET_BRANDS:
         if (b in domain_part and domain_root not in HIGH_TRUST_DOMAINS
                 and domain_root != f"{b}.com"):
             is_brand_spoof = 1
             break
+
+    # Subdomain brand spoof: catch paypal.com.phishing-login.ru style attacks
+    # If a trusted brand name appears IN the subdomains (not the root), it's spoofed.
+    if not is_brand_spoof:
+        subdomains = domain_part.replace(domain_root, '').rstrip('.')
+        for b in TARGET_BRANDS:
+            if b in subdomains:
+                is_brand_spoof = 1
+                break
+
+    # Fuzzy check with digit normalization: catch g00gle, bank0famerica, paypa1
+    if not is_brand_spoof and domain_root not in HIGH_TRUST_DOMAINS:
+        norm_stem = _normalize(domain_stem)
+        for b in TARGET_BRANDS:
+            if len(b) >= 5 and (_edit_dist(norm_stem, b) <= 2
+                                or _edit_dist(domain_stem, b) <= 2):
+                is_brand_spoof = 1
+                break
 
     f1.append(is_brand_spoof)
     return np.array(f1, dtype=np.float32).reshape(1, -1)
@@ -204,15 +249,16 @@ def predict():
         decoded_url = unquote(raw_url)
 
         # ==========================================
-        # LAYER 1: THE SHIELD (Whitelist)
+        # LAYER 1: THE SHIELD (Whitelist & Internal)
         # ==========================================
-        if is_whitelisted(decoded_url):
+        if is_whitelisted(decoded_url) or raw_url.startswith(
+                ('chrome-extension://', 'chrome://', 'about:', 'edge://', 'moz-extension://')):
             return jsonify({
                 'url': raw_url,
                 'is_dangerous': False,
                 'prediction': 0,
                 'confidence': 1.0,
-                'reason': "Whitelisted (Trusted Domain)"
+                'reason': "Whitelisted (Trusted/Internal)"
             })
 
         # ==========================================
@@ -284,6 +330,29 @@ def predict():
                 r"(?i)\.htaccess",
                 decoded_url):
             rules_triggered.append("Server File")
+
+        # Subdomain brand-spoof: "paypal.com.evil.ru" — brand appears as a subdomain
+        # of an untrusted root. Highly reliable phishing signal.
+        _TRUSTED_BRAND_DOMAINS = {
+            'paypal.com', 'google.com', 'apple.com', 'microsoft.com',
+            'amazon.com', 'facebook.com', 'netflix.com', 'bankofamerica.com',
+            'wellsfargo.com', 'chase.com', 'instagram.com', 'twitter.com',
+        }
+        for trusted in _TRUSTED_BRAND_DOMAINS:
+            if trusted in domain_part and domain_root != trusted:
+                rules_triggered.append("Brand Subdomain Spoof")
+                break
+
+        # Digit-substitution brand spoof: "bank0famerica" → "bankofamerica"
+        _DS = str.maketrans('013458', 'oieash')
+        norm_domain = domain_part.translate(_DS)
+        _SAFE_ROOTS = {'google.com', 'paypal.com', 'apple.com', 'microsoft.com',
+                       'amazon.com', 'netflix.com', 'facebook.com', 'bankofamerica.com'}
+        for b in ['paypal', 'google', 'apple', 'microsoft', 'netflix',
+                  'amazon', 'bankofamerica', 'wellsfargo', 'facebook']:
+            if b in norm_domain and domain_root not in _SAFE_ROOTS:
+                rules_triggered.append("Brand Digit Spoof")
+                break
 
         # 1. IMMEDIATE RULE CHECK (Precedence over bypass)
         if rules_triggered:
@@ -411,8 +480,22 @@ def predict():
         malicious_proba = 1.0 - all_probs[normal_idx]
 
         # Dynamic Thresholds based on underlying domain context
-        threshold = 0.85 if domain_root in HIGH_TRUST_DOMAINS else 0.35
-        is_dangerous = malicious_proba > threshold
+        # Unknown/new domains need 65% confidence to block to prevent false positives
+        threshold = 0.85 if domain_root in HIGH_TRUST_DOMAINS else 0.65
+
+        # Check for brand spoofing BEFORE applying the short-domain leniency.
+        # This ensures typosquats (paypa1.com, g00gle.com) never get a free pass.
+        raw_feats_check = extract_features(clean_url)
+        is_brand_spoof_detected = bool(raw_feats_check[0][-1] == 1.0)
+
+        # Heuristic: Short, simple domains (startups/services: fast.com, haicabs.com)
+        # with no subdomains, no static rule triggers, and NO brand spoofing detected
+        # are very likely safe. Require 99% AI confidence before blocking them.
+        if (len(domain_root) < 15 and domain_part == domain_root
+                and not rules_triggered and not is_brand_spoof_detected):
+            threshold = 0.99
+            
+        is_dangerous = bool(malicious_proba > threshold)
 
         # Determine the most likely specific attack for reasoning
 

@@ -135,8 +135,30 @@ suite = data_integrity()
 result = suite.run(train_dataset=ds_combined)
 
 # Save Report
-print(f"💾 Saving report to {REPORT_PATH}...")
+print(f"💾 Saving HTML report to {REPORT_PATH}...")
 os.makedirs(os.path.dirname(REPORT_PATH), exist_ok=True)
 result.save_as_html(REPORT_PATH)
+
+# Generate Markdown Summary
+SUMMARY_PATH = 'docs/deepchecks_summary.md'
+print(f"📝 Generating Markdown summary at {SUMMARY_PATH}...")
+
+with open(SUMMARY_PATH, 'w') as f:
+    f.write("# WebGuard ML Data Integrity Summary\n\n")
+    f.write(f"**Status**: {'✅ PASSED' if result.passed() else '⚠️ ISSUES DETECTED'}\n\n")
+    f.write("## Check Results\n\n")
+    f.write("| Check Name | Status | Details |\n")
+    f.write("| :--- | :--- | :--- |\n")
+    
+    # In Deepchecks 0.19.1, use results
+    results = getattr(result, 'results', [])
+    for check_result in results:
+        try:
+            name = check_result.check.name()
+            status = "✅ Pass" if check_result.passed() else "❌ Fail" if check_result.failed() else "ℹ️ Info"
+            desc = getattr(check_result, 'header', 'Review HTML report')
+            f.write(f"| {name} | {status} | {desc} |\n")
+        except:
+            continue
 
 print("✅ Validation Complete!")

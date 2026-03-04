@@ -150,14 +150,20 @@ with open(SUMMARY_PATH, 'w') as f:
     f.write("| Check Name | Status | Details |\n")
     f.write("| :--- | :--- | :--- |\n")
     
-    # In Deepchecks 0.19.1, use results
-    results = getattr(result, 'results', [])
-    for check_result in results:
+    # Parse results from JSON for robustness
+    data = result.to_json()
+    import json
+    parsed = json.loads(data)
+    
+    # Deepchecks JSON structure: 'results' is a list of check results
+    for check_data in parsed.get('results', []):
         try:
-            name = check_result.check.name()
-            status = "✅ Pass" if check_result.passed() else "❌ Fail" if check_result.failed() else "ℹ️ Info"
-            desc = getattr(check_result, 'header', 'Review HTML report')
-            f.write(f"| {name} | {status} | {desc} |\n")
+            name = check_data.get('check', {}).get('name', 'Unknown Check')
+            status_code = check_data.get('status', 'info')
+            status = "✅ Pass" if status_code == 'pass' else "❌ Fail" if status_code == 'fail' else "ℹ️ Info"
+            # Get the first line of the header or a default message
+            summary = check_data.get('header', 'See HTML report')
+            f.write(f"| {name} | {status} | {summary} |\n")
         except:
             continue
 

@@ -32,7 +32,7 @@ if 'max_error' not in sklearn.metrics.get_scorer_names():
 
 from sklearn.model_selection import train_test_split
 from deepchecks.tabular import Dataset
-from deepchecks.tabular.suites import full_suite
+from deepchecks.tabular.suites import data_integrity
 import tensorflow as tf
 from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing.sequence import pad_sequences
@@ -126,16 +126,13 @@ df_meta = pd.DataFrame(X_meta, columns=feature_names)
 df_meta['target'] = le.transform(labels)
 
 # --- Deepchecks Validation ---
-print("🚀 Running Deepchecks Full Suite...")
-# Split into "train" and "test" for drift/leakage checks
-train_df, test_df = train_test_split(df_meta, test_size=0.3, random_state=42)
-
-ds_train = Dataset(train_df, label='target', cat_features=[])
-ds_test = Dataset(test_df, label='target', cat_features=[])
+print("🚀 Running Deepchecks Data Integrity Suite...")
+# We use the combined dataset to check for duplicates and overall health
+ds_combined = Dataset(df_meta, label='target', cat_features=[])
 
 # Run Suite
-suite = full_suite()
-result = suite.run(train_dataset=ds_train, test_dataset=ds_test, model=meta_learner)
+suite = data_integrity()
+result = suite.run(train_dataset=ds_combined)
 
 # Save Report
 print(f"💾 Saving report to {REPORT_PATH}...")

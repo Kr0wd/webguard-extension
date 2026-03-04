@@ -54,29 +54,9 @@ dataset_capec_combine.csv
 majestic_million.csv
 merged_urls_dataset.csv
 
-# Additional Large Datasets & Unnecessary Texts
+# Ignore big datasets and evaluation logs from v6
 *.csv
 *.zip
 *.txt
 !requirements.txt
-*.log
-
-# Training & Eval Scripts
-train.py
-train_*.py
-retrain_*.py
-evaluate_*.py
-check_model_outputs.py
-build_*.py
-download_*.py
-tmp_*.py
-
-# Training outputs
-training_history.pkl
-*.png
-!v6_system_architecture.png
-
-# Agent artifacts
-task.md
-implementation_plan.md
-walkthrough.md
+!README.md

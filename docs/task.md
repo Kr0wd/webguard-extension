@@ -1,18 +1,24 @@
-# Task Checklist
+# Vigorous Testing of WebGuard False Positive Fixes
 
-- [x] Optimize Data Pipeline to hit 98% Accuracy
-  - [x] Increase TF-IDF vocabulary to `25000` and n-gram range to `(1,3)`.
-  - [x] Include more Phishing samples in training rather than capping at 20,000.
-  - [x] Adjust XGBoost class weights to penalize False Negatives (target `2.5x` weight for malicious).
-- [x] Retrain Models (v6 - 446k URLs + High-Fidelity Features)
-    - [x] SVM Foundation (95.02% Accuracy)
-    - [x] CNN Deep Learning (98.03% Val Accuracy)
-    - [x] XGBoost Meta-Learner (98.77% Master Accuracy)
-- [x] Run Final Evaluation (97.80% Overall - Met Recall/Precision targets)
-- [x] Generate Performance Visualizations (Confusion Matrix, etc.)
-- [x] Evaluate System Performance (>98% Target)
-    - [x] Run `evaluate_mixed.py`
-    - [ ] Analyze False Positives/Negatives
-- [x] Optimize Classification Thresholds
-  - [x] Adjust base decision threshold to `0.35` in `evaluate_mixed.py` to boost recall without destroying precision.
-  - [ ] Mirror final optimal threshold to `server.py`.
+## Goals
+- Run comprehensive tests across short domains, Indian gov domains, local service links, and real phishing URLs
+- Identify any remaining false positives or missed detections
+- Fix any failures found during testing
+
+## Tasks
+
+- [x] Run test batch 1: Indian government / institutional domains
+- [x] Run test batch 2: Short startup/service domains (benign)
+- [x] Run test batch 3: Known phishing & malicious URLs
+- [x] Run test batch 4: Typosquat brand spoof domains
+- [x] Analyze results and fix any failures (including `cred.club`, `paypal.com.phishing-login.ru`, `bank0famerica.com`, `g00gle.com`)
+- [x] Restart server with final fixes and re-verify (all 36+ target URLs now passing)
+- [x] Fix extension UX: `chrome://` bypass, `go-back` button navigation, and missing `manifest.json` in build
+- [x] **Integrate Deepchecks for ML Validation**
+    - [x] Update `requirements.txt` with `deepchecks`, `pandas`, `xgboost`, and `anywidget`
+    - [x] Create `check_integrity.py` validation script with compatibility patches
+    - [x] Run validation suite and generate `docs/deepchecks_report.html`
+- [x] **Repository Cleanup and Optimization**
+    - [x] Remove legacy root `manifest.json`
+    - [x] Clear `dist/` and `__pycache__`
+    - [x] Update `.gitignore` if necessary

@@ -1,152 +1,112 @@
-# URL Safety Checker Browser Extension
+# WebGuard Installation Guide
 
-A browser extension that uses machine learning to predict whether URLs are dangerous or safe.
-
-## Features
-
-- 🛡️ Real-time URL safety checking
-- 🤖 ML-powered predictions using SVM model
-- 🎨 Beautiful, modern UI
-- ⚡ Fast and lightweight
+This guide walks you through setting up the **WebGuard Phishing Detection Browser Extension**. Setup is broken down into two components: the **Python Inference Server** and the **React + Vite Browser Extension**.
 
 ## Prerequisites
 
-- Python 3.7+
-- Node.js 16+
-- Chrome or Firefox browser
+*   **Python:** 3.8 or higher
+*   **Node.js:** v16.0 or higher
+*   **NPM:** v7.0 or higher
+*   **Browser:** Google Chrome, Microsoft Edge, or Mozilla Firefox
 
-## Setup Instructions
+---
 
-### 1. Install Python Dependencies
+## Part 1: Starting the Python Inference Server
+
+The brain of WebGuard relies on a local Python Flask server that hosts the machine learning pipeline (SVM, CNN-BiLSTM, XGBoost) and handles URL classification requests.
+
+### 1. Install Dependencies
+
+Navigate to the project root directory and install the required Python packages. We recommend using a virtual environment:
 
 ```bash
-cd extension
-pip install -r requirements.txt
+# Optional but recommended: Create and activate a virtual environment
+python3 -m venv venv
+source venv/bin/activate  # On Windows, use `venv\Scripts\activate`
+
+# Install required dependencies
+pip install Flask flask-cors pandas joblib numpy tensorflow scikit-learn xgboost
 ```
+*(Alternatively, you can run `pip install -r requirements.txt` if a requirements file is present)*
 
-### 2. Start the Flask API Server
+### 2. Verify Models are Present
 
-The extension requires a local Flask server to run the ML model:
+Ensure that the required pre-trained model files exist in the `models/` directory:
+*   `local_hybrid_model.keras`
+*   `local_svm_model.pkl`
+*   `local_meta_learner_global.pkl`
+*   `local_tokenizer.pkl`, `local_label_encoder.pkl`, `local_vectorizer.pkl`, `local_url_scaler.pkl`
+
+*(If these files are missing, you will need to generate them by running `python train.py`)*
+
+### 3. Run the Server
+
+Start the Flask application:
 
 ```bash
 python server.py
 ```
 
-The server will start on `http://localhost:5000`. Keep this terminal window open.
+The server will initialize the Hybrid Engine, load the models, and start listening on `http://localhost:5000`. Leave this terminal running in the background.
 
-### 3. Build the Extension
+---
 
-In a new terminal:
+## Part 2: Building the Browser Extension
+
+WebGuard's frontend is a React application built with Vite, injecting an interface into your browser to communicate with the Python server.
+
+### 1. Install Node Packages
+
+Open a **new terminal window** in the project root directory and install the necessary Node.js dependencies:
 
 ```bash
-cd extension
 npm install
+```
+
+### 2. Build the Extension File
+
+Compile the React project into static files suitable for a browser extension:
+
+```bash
 npm run build
 ```
 
-This will create a `dist` folder with the extension files.
+This command generates a `dist/` directory containing the optimized application and automatically includes the `manifest.json`.
 
-### 4. Copy manifest.json to dist
+---
 
-After building, copy the manifest file:
+## Part 3: Loading the Extension into Your Browser
 
-```bash
-cp manifest.json dist/
-```
+### For Google Chrome & Microsoft Edge (Chromium)
 
-### 5. Load the Extension in Chrome
+1. Open your browser and navigate to the Extensions page:
+   * **Chrome:** `chrome://extensions/`
+   * **Edge:** `edge://extensions/`
+2. Toggle on **Developer mode** (typically located in the top-right corner).
+3. Click the **Load unpacked** button.
+4. Select the `dist/` folder located inside your `webguard-extension` directory.
+5. Make sure the WebGuard extension is toggled **On**. You should now see the WebGuard shield icon in your extension toolbar.
 
-1. Open Chrome and go to `chrome://extensions/`
-2. Enable "Developer mode" (toggle in top right)
-3. Click "Load unpacked"
-4. Select the `extension/dist` folder
-5. The extension icon should appear in your toolbar
+### For Mozilla Firefox
 
-### 6. Load the Extension in Firefox
+1. Open Firefox and navigate to `about:debugging#/runtime/this-firefox`
+2. Click **Load Temporary Add-on...**
+3. Navigate to the `dist/` folder in your project directory and select the `manifest.json` file.
+4. The extension is now active for your current browsing session.
 
-1. Open Firefox and go to `about:debugging#/runtime/this-firefox`
-2. Click "Load Temporary Add-on"
-3. Navigate to `extension/dist` and select the `manifest.json` file
-
-## Usage
-
-1. **Make sure the Flask server is running** (`python server.py`)
-2. Navigate to any website
-3. Click the extension icon in your browser toolbar
-4. The extension will automatically analyze the current URL and display:
-   - Whether the URL is safe or dangerous
-   - Confidence score (if available)
-
-## Model Information
-
-The extension uses a character-based SVM model (`char_svm_model.pkl`) located in the `public/` folder. The model analyzes various features of the URL including:
-
-- URL length
-- Special character counts
-- Digit and letter ratios
-- Domain characteristics
-
-**Important Note**: The feature extraction in `server.py` is a basic implementation. You may need to adjust the `extract_features()` function to match how your model was trained for optimal accuracy.
-
-## Development
-
-To run in development mode:
-
-```bash
-# Terminal 1: Start Flask server
-python server.py
-
-# Terminal 2: Start Vite dev server
-npm run dev
-```
-
-Then open `http://localhost:5173` in your browser to test the UI.
+---
 
 ## Troubleshooting
 
-### "Error: Failed to get prediction"
+*   **Prediction Errors / Fails to Load:** Ensure your Python Flask server (`server.py`) is running and accessible at `http://localhost:5000`. You can test this by navigating to `http://localhost:5000/health` in your browser.
+*   **"Models not loaded" Error:** Check the terminal running `server.py` for specific tracebacks. You might be missing standard dependencies like `xgboost` or the models simply haven't been generated in the `models/` folder.
+*   **Changes not reflecting in UI:** If you made changes to the React code in `src/`, make sure to run `npm run build` again, go to your browser's extension panel, and click the "Refresh" icon on the extension card.
 
-- Make sure the Flask server is running on port 5000
-- Check that `char_svm_model.pkl` exists in the `public/` folder
-- Verify Python dependencies are installed
+## Development Mode
 
-### Extension doesn't load
+If you are developing the UI component and want Hot Module Replacement (HMR), you can run:
 
-- Make sure you've built the extension (`npm run build`)
-- Ensure `manifest.json` is copied to the `dist/` folder
-- Check browser console for errors
-
-### Model predictions seem incorrect
-
-- The feature extraction may need adjustment based on your model's training
-- Review and modify the `extract_features()` function in `server.py`
-
-## Project Structure
-
+```bash
+npm run dev
 ```
-extension/
-├── manifest.json          # Extension manifest (Manifest V3)
-├── server.py             # Flask API server for model predictions
-├── requirements.txt      # Python dependencies
-├── package.json          # Node.js dependencies
-├── vite.config.js        # Vite build configuration
-├── public/
-│   └── char_svm_model.pkl  # ML model file
-├── src/
-│   ├── App.jsx           # Main React component
-│   ├── App.css           # Styles
-│   └── main.jsx          # Entry point
-└── dist/                 # Built extension (after npm run build)
-```
-
-## Security Note
-
-This extension makes requests to `localhost:5000`. In a production environment, you would want to:
-- Host the model on a secure server
-- Use HTTPS
-- Implement proper authentication
-- Add rate limiting
-
-## License
-
-MIT
+Then navigate to `http://localhost:5173` to test the UI standalone without loading it as an extension.

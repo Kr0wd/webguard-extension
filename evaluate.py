@@ -20,13 +20,13 @@ from sklearn.metrics import (accuracy_score, precision_score, recall_score,
 
 # ── Load Models ─────────────────────────────────────────────────────────────
 print("📥 Loading models and preprocessors...")
-vectorizer   = joblib.load('local_vectorizer.pkl')
-svm          = joblib.load('local_svm_model.pkl')
-le           = joblib.load('local_label_encoder.pkl')
-url_scaler   = joblib.load('local_url_scaler.pkl')
-tokenizer    = joblib.load('local_tokenizer.pkl')
-cnn_model    = load_model('local_hybrid_model.keras')
-meta_model   = joblib.load('local_meta_learner_global.pkl')
+vectorizer   = joblib.load('models/local_vectorizer.pkl')
+svm          = joblib.load('models/local_svm_model.pkl')
+le           = joblib.load('models/local_label_encoder.pkl')
+url_scaler   = joblib.load('models/local_url_scaler.pkl')
+tokenizer    = joblib.load('models/local_tokenizer.pkl')
+cnn_model    = load_model('models/local_hybrid_model.keras')
+meta_model   = joblib.load('models/local_meta_learner_global.pkl')
 
 MAX_LEN = 550
 
@@ -197,19 +197,19 @@ def predict_url(raw_url):
 # ── Load Mixed Dataset ────────────────────────────────────────────────────────
 print("\n📂 Loading mixed unseen datasets...")
 # Source 1: PhishTank (Phishing)
-df_phish = pd.read_csv('phishtank.csv').dropna(subset=['url'])
+df_phish = pd.read_csv('data/phishtank.csv').dropna(subset=['url'])
 pool_phish = [{'url': u, 'label': 1, 'source': 'PhishTank'} for u in df_phish['url'].sample(n=min(1000, len(df_phish)), random_state=42)]
 
 # Source 2: UrlHaus Recent (Malware)
-df_urlhaus = pd.read_csv('urlhaus_recent.csv', comment='#', header=None, quoting=1)
+df_urlhaus = pd.read_csv('data/urlhaus_recent.csv', comment='#', header=None, quoting=1)
 pool_malware = [{'url': u, 'label': 1, 'source': 'UrlHaus'} for u in df_urlhaus[2].sample(n=min(1000, len(df_urlhaus)), random_state=42)]
 
 # Source 3: Modern Benign Dataset
-df_modern = pd.read_csv('modern_benign_dataset.csv').dropna(subset=['url'])
+df_modern = pd.read_csv('data/modern_benign_dataset.csv').dropna(subset=['url'])
 pool_benign = [{'url': u, 'label': 0, 'source': 'Modern Benign'} for u in df_modern['url'].sample(n=min(1000, len(df_modern)), random_state=42)]
 
 # Source 4: Majestic Benign (Clean Traffic)
-df_majestic = pd.read_csv('majestic_benign_200k.csv').dropna(subset=['url'])
+df_majestic = pd.read_csv('data/majestic_benign_200k.csv').dropna(subset=['url'])
 pool_clean = [{'url': u, 'label': 0, 'source': 'Majestic Benign'} for u in df_majestic['url'].sample(n=min(1000, len(df_majestic)), random_state=42)]
 
 # Combine all 

@@ -677,11 +677,16 @@ F1-Score & \textbf{97.66\%} \\
 
 \begin{frame}{Results (2/6): Confusion Matrix Analysis}
 \subsection{Detection Reliability}
+\begin{figure}
+    \centering
+    \includegraphics[width=0.63\linewidth]{v6_confusion_matrix.png}
+    \caption{Confusion Matrix: Only 15 False Positives and 77 False Negatives across 4,000 URLs.}
+    \label{fig:cm-analysis}
+\end{figure}
 \begin{itemize}
-    \item \textbf{True Positives (Malicious):} Successfully identified 1,952 out of 2,000 attack URLs.
-    \item \textbf{False Positives (Benign):} Minimal noise with only 40 benign URLs flagged as malicious (1.0\% FP Rate).
-    \item \textbf{False Negatives:} Only 48 malicious URLs bypassed the ensemble (1.2\% FN Rate).
-    \item \textbf{Classification Depth:} The model successfully distinguishes between Phishing, Injection, and Manipulation categories.
+    \item \textbf{True Positives (Malicious):} Correctly identified \textbf{1,923} out of 2,000 attack URLs.
+    \item \textbf{False Positives (Benign):} Only \textbf{15} benign URLs flagged as malicious (\textbf{0.75\% FP Rate}).
+    \item \textbf{False Negatives:} Only \textbf{77} malicious URLs bypassed the ensemble (\textbf{3.85\% FN Rate}).
 \end{itemize}
 \end{frame}
 
@@ -695,14 +700,14 @@ F1-Score & \textbf{97.66\%} \\
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Results (4/6): Detailed Model Breakdown}
-\subsection{Confusion Matrices}
-\begin{figure}
-    \centering
-    \includegraphics[width=0.63\linewidth]{v6_confusion_matrix.png} 
-    \caption{Confusion Matrices for all layers showing minimal False Positives (7) for the Hybrid Ensemble.}
-    \label{fig:confusion-matrices}
-\end{figure}
+\begin{frame}{Results (4/6): The Stacking Ensemble Logic}
+\subsection{Meta-Learner Architecture}
+\begin{itemize}
+    \item \textbf{Foundation Layers:} Integration of Calibrated LinearSVC and \textbf{CNN-BiLSTM} Neural Model.
+    \item \textbf{Feature Fusion:} The meta-learner combines model probabilities with hand-crafted features: Shannon Entropy, Digit Density, and Brand Spoofing flags.
+    \item \textbf{Cost-Sensitive Learning:} Applied a \textbf{2.5x penalty weight} for malicious classification to prioritize security recall.
+    \item \textbf{XGBoost Arbitration:} Uses a 300-estimator gradient boosted tree to reach \textbf{98.81\% global accuracy}.
+\end{itemize}
 \end{frame}
 
 \begin{frame}{Results (5/6): Comparative Analysis}

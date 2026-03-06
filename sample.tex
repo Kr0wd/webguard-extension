@@ -5,17 +5,10 @@
 \documentclass[aspectratio=169,xcolor=dvipsnames]{beamer}
 \usetheme{SimpleDarkBlue}
 
-\usepackage{hyperref}
-\usepackage{booktabs} % Allows the use of \toprule, \midrule and \bottomrule in tables
-% Algorithm packages
-% \usepackage{algorithm}   % For algorithm environment
-% \usepackage{algorithmic} % For algorithmic pseudocode
-% \usepackage{float}       % For [H] placement option
-\usepackage[ruled,vlined,linesnumbered]{algorithm2e}
-\usepackage{algcompatible}
 \usepackage{graphicx}   % for \includegraphics and \resizebox
 \usepackage{caption}    % if you want captions inside beamer
 \usepackage{makecell}   % for \makecell in tables
+\usepackage{tcolorbox}  % lightweight colored boxes for pseudocode
 
 %----------------------------------------------------------------------------------------
 %    TITLE PAGE
@@ -30,9 +23,9 @@ Team Members: \\
 Rahul K J (FIT22CS155)\\
 Sethulakshmi P A (FIT22CS170)\\
 Sidharth C J (FIT22CS176)\\
-Susan Joy (FIT22CS184)\\[0.5cm] % add space before date
-\today
-}
+Susan Joy (FIT22CS184)}
+
+\date{\today}
 
 
 
@@ -395,100 +388,80 @@ Finalizing the pipeline for real-world integration:
 %----------------------------------------------------------------------------------------
 
 \begin{frame}{Algorithm: Global Data Consolidation (1/5)}
-\begin{algorithm}[H]
+\begin{tcolorbox}[colback=gray!8,colframe=blue!50!black,title=\textbf{Step 1 \& 2: Data Integration + Normalization},fonttitle=\small,left=4pt,right=4pt,top=4pt,bottom=4pt]
 \small
-\begin{algorithmic}[1]
-
-    \State \textbf{Step 1: Multi-Source Integration}
-    \State \quad Load Benign (Cisco/Majestic) and PhishTank datasets
-    \State \quad Import CAPEC-aligned Injection/Manipulation data
-    \State \quad Inject "New Unseen" dataset to bridge accuracy gaps
-    \State \quad Normalize labels: Normal, Phishing, Injection, Manipulation
-    
-    \State \textbf{Step 2: URL Normalization and Cleaning}
-    \State \quad Strip protocols (http/https) and 'www.' prefixes
-    \State \quad Perform URL decoding (unquote) to expose payloads
-    \State \quad Remove duplicates and perform stratified sampling
-    \State \quad Final counts: 120k Benign, 80k Phishing, + Attack classes
-
-\end{algorithmic}
-\end{algorithm}
+\begin{itemize}
+    \item Load Benign (Cisco/Majestic) and PhishTank datasets
+    \item Import CAPEC-aligned Injection/Manipulation data
+    \item Inject ``New Unseen'' dataset to bridge accuracy gaps
+    \item Normalize labels: Normal, Phishing, Injection, Manipulation
+    \item Strip protocols (http/https) and decode URL-encoded payloads
+    \item Final counts: 120k Benign, 80k Phishing, + Attack classes
+\end{itemize}
+\end{tcolorbox}
 \end{frame}
 
 \begin{frame}{Algorithm: Feature Engineering Architecture (2/5)}
-\begin{algorithm}[H]
+\begin{tcolorbox}[colback=gray!8,colframe=blue!50!black,title=\textbf{Step 3: Multi-Modal Feature Extraction},fonttitle=\small,left=4pt,right=4pt,top=4pt,bottom=4pt]
 \small
-\begin{algorithmic}
-
-  \State \textbf{Step 3: Multi-Modal Feature Extraction}
-  \State \hspace{1.2em}(a) \textbf{NLP:} Fit TfidfVectorizer (Max: 25k, N-grams: 1--3)
-  \State \hspace{1.2em}(b) \textbf{Neural:} Tokenize URLs (char-level) and pad to length 550
-  \State \hspace{1.2em}(c) \textbf{Structural:} Extract Shannon Entropy and digit density
-  \State \hspace{1.2em}(d) \textbf{Security Logic:} Detect Brand Spoofing via Trust List
-  \State \hspace{1.2em}\quad (i) Identify target brands (Paypal, Apple, Microsoft, etc.)
-  \State \hspace{1.2em}\quad (ii) Flag if brand in domain BUT not in \textit{HIGH\_TRUST\_DOMAINS}
-
-\end{algorithmic}
-\end{algorithm}
+\begin{itemize}
+    \item \textbf{(a) NLP:} Fit TfidfVectorizer (Max: 25k, N-grams: 1--3)
+    \item \textbf{(b) Neural:} Tokenize URLs (char-level), pad to length 550
+    \item \textbf{(c) Structural:} Extract Shannon Entropy and digit density
+    \item \textbf{(d) Security Logic:} Detect Brand Spoofing via Trust List
+    \item[] \quad (i) Identify target brands (Paypal, Apple, Microsoft, etc.)
+    \item[] \quad (ii) Flag if brand in domain but NOT in \textit{HIGH\_TRUST\_DOMAINS}
+\end{itemize}
+\end{tcolorbox}
 \end{frame}
 
 \begin{frame}{Algorithm: Calibrated SVM \& Deep Learning (3/5)}
-\begin{algorithm}[H]
+\begin{tcolorbox}[colback=gray!8,colframe=blue!50!black,title=\textbf{Step 4 \& 5: Foundation Model Training},fonttitle=\small,left=4pt,right=4pt,top=4pt,bottom=4pt]
 \small
-\begin{algorithmic}
-
-  \State \textbf{Step 4: Train Foundation Model A (Calibrated SVM)}
-  \State \hspace{1.2em}(a) Initialize LinearSVC with $C=1.0$ and dual=False
-  \State \hspace{1.2em}(b) Wrap in CalibratedClassifierCV (3-fold) for probabilities
-  \State \hspace{1.2em}(c) Fit on TF-IDF matrix to learn textual signatures
-
-  \State \textbf{Step 5: Train Foundation Model B (Hybrid CNN-BiLSTM)}
-  \State \hspace{1.2em}(a) Layer 1: 64-dim Character Embedding
-  \State \hspace{1.2em}(b) Layer 2: \textbf{Conv1D (64 filters, kernel=3)} for spatial features
-  \State \hspace{1.2em}(c) Layer 3-4: Stacked Bidirectional LSTM (64 units each)
-  \State \hspace{1.2em}(d) Output: Softmax activation for model-level probability distribution
-
-\end{algorithmic}
-\end{algorithm}
+\textbf{Model A -- Calibrated SVM:}
+\begin{itemize}
+    \item Initialize LinearSVC ($C=1.0$, dual=False), wrap in CalibratedClassifierCV
+    \item Fit on TF-IDF matrix to learn textual signatures
+\end{itemize}
+\textbf{Model B -- Hybrid CNN-BiLSTM:}
+\begin{itemize}
+    \item Layer 1: 64-dim Character Embedding
+    \item Layer 2: \textbf{Conv1D (64 filters, kernel=3)} for spatial features
+    \item Layer 3-4: Stacked Bidirectional LSTM (64 units each)
+    \item Output: Softmax activation for multi-class probability
+\end{itemize}
+\end{tcolorbox}
 \end{frame}
 
 \begin{frame}{Algorithm: Meta-Learner Stacking Ensemble (4/5)}
-\begin{algorithm}[H]
+\begin{tcolorbox}[colback=gray!8,colframe=blue!50!black,title=\textbf{Step 6 \& 7: Feature Fusion and XGBoost Training},fonttitle=\small,left=4pt,right=4pt,top=4pt,bottom=4pt]
 \small
-\begin{algorithmic}
-
-  \State \textbf{Step 6: Feature Fusion and Weighting}
-  \State \hspace{1.2em}(a) Generate $P(class|SVM)$ and $P(class|CNN)$ probabilities
-  \State \hspace{1.2em}(b) Concatenate: $[P_{svm}, P_{cnn}, HandFeats_{scaled}]$
-  \State \hspace{1.2em}(c) Define Sample Weights: 2.5x penalty for Malicious URLs
-
-  \State \textbf{Step 7: Train XGBoost Meta-Learner}
-  \State \hspace{1.2em}(a) Config: 300 estimators, depth 8, learning rate 0.05
-  \State \hspace{1.2em}(b) Enable GPU-accelerated Histogram tree method
-  \State \hspace{1.2em}(c) Train XGBoost on fused features with cost-sensitivity
-
-\end{algorithmic}
-\end{algorithm}
+\begin{itemize}
+    \item \textbf{(a)} Generate $P(class|SVM)$ and $P(class|CNN\text{-}BiLSTM)$ probabilities
+    \item \textbf{(b)} Concatenate: $[P_{svm},\; P_{cnn},\; HandFeats_{scaled}]$
+    \item \textbf{(c)} Apply 2.5x sample weight penalty for Malicious URLs
+    \item \textbf{(d)} Train XGBoost (300 estimators, depth 8, lr 0.05)
+    \item \textbf{(e)} Enable GPU Histogram tree method for fast training
+\end{itemize}
+\end{tcolorbox}
 \end{frame}
 
 \begin{frame}{Algorithm: Inference \& Persistence (5/5)}
-\begin{algorithm}[H]
+\begin{tcolorbox}[colback=gray!8,colframe=blue!50!black,title=\textbf{Step 8: Model Serialization + ClassifyURL},fonttitle=\small,left=4pt,right=4pt,top=4pt,bottom=4pt]
 \small
-\begin{algorithmic}
-
-  \State \textbf{Step 8: Model Serialization}
-  \State \hspace{1.2em}(a) Save 7-key pipeline components (pkl/keras formats)
-  \State \hspace{1.2em}(b) Persist LabelEncoder for categorical mapping
-
-  \State \textbf{ClassifyURL(NewUrl):}
-  \State \hspace{1.2em}1. Extract Hand-crafted features + Brand Spoofing flag
-  \State \hspace{1.2em}2. Transform URL via Vectorizer and Tokenizer
-  \State \hspace{1.2em}3. Collect probabilities from SVM and CNN-BiLSTM
-  \State \hspace{1.2em}4. \textbf{Final Decision:} XGBoost.predict($fused\_vector$)
-  \State \hspace{1.2em}\textbf{Return:} Predicted Label (Normal, Phishing, or Attack)
-
-\end{algorithmic}
-\end{algorithm}
+\textbf{Serialization:}
+\begin{itemize}
+    \item Save 7-key pipeline components (pkl/keras formats)
+    \item Persist LabelEncoder for categorical mapping
+\end{itemize}
+\textbf{ClassifyURL(NewUrl):}
+\begin{itemize}
+    \item Extract hand-crafted features + Brand Spoofing flag
+    \item Transform via Vectorizer and Tokenizer
+    \item Collect probabilities from SVM and CNN-BiLSTM
+    \item \textbf{Return:} XGBoost.predict($fused\_vector$) $\rightarrow$ Label
+\end{itemize}
+\end{tcolorbox}
 \end{frame}
 
 %----------------------------------------------------------------------------------------

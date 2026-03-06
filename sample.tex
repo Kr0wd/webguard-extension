@@ -11,7 +11,7 @@
 % Algorithm packages
 % \usepackage{algorithm}   % For algorithm environment
 % \usepackage{algorithmic} % For algorithmic pseudocode
-% \usepackage{float}       % For [htbp] placement option
+% \usepackage{float}       % For [H] placement option
 \usepackage[ruled,vlined,linesnumbered]{algorithm2e}
 \usepackage{algcompatible}
 \usepackage{graphicx}   % for \includegraphics
@@ -152,8 +152,8 @@ SDG 17 strengthens global partnerships for sustainable development.
 
 \end{frame}
 
-
 \begin{frame}{Overview of literature reviews}
+\section{Overview of literature review}
 
 \begin{table}[htbp]
 \centering
@@ -164,33 +164,42 @@ SDG 17 strengthens global partnerships for sustainable development.
 \hline
 \textbf{Year} & \textbf{Authors} & \textbf{Paper Title} & \textbf{Objectives} & \textbf{Methodology} & \textbf{Conclusion / Results} & \textbf{Contributions / Findings} \\
 \hline
+
 2023 & Demirel et al. & Zero-Shot CNN for Web Attacks 
 & Detect zero-day and unseen attacks 
 & CNN-based zero-shot anomaly detection 
 & High recall; increased FPR 
 & Detection of unseen attack patterns without labeled data \\
 \hline
+
 2023 & Li et al. & Meta-Zero Web Security 
 & Cross-domain few-shot adaptation 
 & Meta-learning episodic training 
 & Fast adaptation with few samples 
 & Improved generalization under concept drift \\
 \hline
+
 2023 & Bensaid et al. & CNN-BiLSTM IDS 
 & Improve SDN intrusion detection accuracy 
 & Hybrid CNN + BiLSTM architecture 
 & Accuracy $>$ 98\% 
 & Effective spatial-temporal traffic modeling \\
 \hline
+
 2024 & Alashhab et al. & Online ML Ensemble for DDoS 
 & Real-time DDoS detection and mitigation 
 & Adaptive online ensemble learning 
 & High detection rate; low delay 
 & Dynamic adaptation to traffic variations \\
 \hline
+
 \end{tabular}
 }
-\begin{frame}{Overview of literature reviews (Continued)}
+\label{tab:literature_review}
+\end{table}
+\end{frame}
+\begin{frame}{Overview of literature reviews}
+\section{Overview of literature review}
 \begin{table}[htbp]
 \centering
 \renewcommand{\arraystretch}{1.3}
@@ -200,42 +209,51 @@ SDG 17 strengthens global partnerships for sustainable development.
 \hline
 \textbf{Year} & \textbf{Authors} & \textbf{Paper Title} & \textbf{Objectives} & \textbf{Methodology} & \textbf{Conclusion / Results} & \textbf{Contributions / Findings} \\
 \hline
+
 2024 & Shayegan et al. & SDN--NFV Defense Framework 
 & Network-level DDoS prevention 
 & SDN + NFV integration 
 & Reduced attack impact 
 & Flexible programmable mitigation \\
 \hline
+
 2024 & Jagat et al. & VLSTM-AE for Web Logs 
 & Detect anomalies in HTTP logs 
 & Variational LSTM Autoencoder 
 & High anomaly detection accuracy 
 & Temporal deviation modeling \\
 \hline
+
 2024 & Yamauchi et al. & URL-Switch Interval Detection 
 & Detect malicious redirects 
 & Behavioral interval analysis 
 & High redirect precision 
 & Lightweight mobile attack detection \\
 \hline
+
 2025 & Guo et al. & Web-FTP Transfer Model 
 & Cross-dataset generalization 
 & Feature transfer learning 
 & Improved accuracy 
 & Effective with limited labels \\
 \hline
+
 2025 & Wu et al. & Blockchain + AAL Security 
 & Improve web resilience 
 & Blockchain + adversarial learning 
 & Enhanced resilience metrics 
 & Distributed adaptive framework \\
 \hline
+
+
+
 \end{tabular}
 }
 \end{table}
 \end{frame}
-\begin{frame}{Overview of literature reviews (Continued)}
-\begin{table}[htbp]
+\begin{frame}{Overview of literature reviews}
+\section{Overview of literature review}
+\begin{table}[H]
 \centering
 \renewcommand{\arraystretch}{1.3}
 \caption{Overview of Literature Review (Continued)}
@@ -244,24 +262,29 @@ SDG 17 strengthens global partnerships for sustainable development.
 \hline
 \textbf{Year} & \textbf{Authors} & \textbf{Paper Title} & \textbf{Objectives} & \textbf{Methodology} & \textbf{Conclusion / Results} & \textbf{Contributions / Findings} \\
 \hline
+
 2025 & Kulkarni et al. & ML vs LLM Phishing Study 
 & Evaluate phishing robustness 
 & Comparative ML vs LLM evaluation 
 & Accuracy drops under adversarial attack 
 & Identified robustness gaps in phishing models \\
 \hline
+
 2025 & Alemayehu et al. & Real-Time Threat Framework 
 & Multi-threat streaming detection 
 & End-to-end deep learning pipeline 
 & High real-time classification accuracy 
 & Automated emerging threat detection \\
 \hline
+
 2025 & Nguyen et al. & HTTP NLP IDS (Zero Trust) 
 & Full semantic HTTP modeling 
 & Deep NLP-based IDS 
 & High accuracy; increased latency 
 & Zero Trust payload-level modeling \\
 \hline
+
+
 \end{tabular}
 }
 \end{table}
@@ -323,7 +346,7 @@ Implementation of the first ensemble member:
 Deep learning model focused on multi-scale feature extraction:
 \begin{itemize}
     \item \textbf{Spatial Layer:} \textbf{Conv1D layer} captures local character motifs (sliding windows) to detect attack fragments.
-    \item \textbf{Temporal Processing:} Two stacked \textbf{Bidirectional LSTM} layers to capture long-range contextual intent.
+    \item \textbf{Temporal Processing:} \textbf{CNN-BiLSTM} layers to capture spatial patterns and long-range contextual intent.
     \item \textbf{Regularization:} SpatialDropout1D and standard Dropout (0.2--0.3) to prevent overfitting.
     \item \textbf{Softmax Output:} Multi-class classification (98.37\% internal accuracy) for distinct threat categories.
 \end{itemize}
@@ -335,7 +358,7 @@ Deep learning model focused on multi-scale feature extraction:
 \textbf{Phase 5: XGBoost Stacking Meta-Learner} \\[0.2cm]
 The core innovation: A "Model of Models" architecture.
 \begin{itemize}
-    \item \textbf{Input Layer:} Stacked probabilities from SVM + CNN + Scaled Hand-crafted features.
+    \item \textbf{Input Layer:} Stacked probabilities from SVM + CNN-BiLSTM + Scaled Hand-crafted features.
     \item \textbf{The Meta-Learner:} \textbf{XGBoost Classifier} (300 estimators, max depth 8).
     \item \textbf{GPU Acceleration:} Utilized `hist` tree method with CUDA for rapid ensemble training.
     \item \textbf{Detection Bias:} Applied 2.5x sample weighting to malicious entries to prioritize lowering False Negatives.
@@ -373,7 +396,7 @@ Finalizing the pipeline for real-world integration:
 %----------------------------------------------------------------------------------------
 
 \begin{frame}{Algorithm: Global Data Consolidation (1/5)}
-\begin{algorithm}[htbp]
+\begin{algorithm}[H]
 \small
 \begin{algorithmic}[1]
 
@@ -394,7 +417,7 @@ Finalizing the pipeline for real-world integration:
 \end{frame}
 
 \begin{frame}{Algorithm: Feature Engineering Architecture (2/5)}
-\begin{algorithm}[htbp]
+\begin{algorithm}[H]
 \small
 \begin{algorithmic}
 
@@ -411,7 +434,7 @@ Finalizing the pipeline for real-world integration:
 \end{frame}
 
 \begin{frame}{Algorithm: Calibrated SVM \& Deep Learning (3/5)}
-\begin{algorithm}[htbp]
+\begin{algorithm}[H]
 \small
 \begin{algorithmic}
 
@@ -423,7 +446,7 @@ Finalizing the pipeline for real-world integration:
   \State \textbf{Step 5: Train Foundation Model B (Hybrid CNN-BiLSTM)}
   \State \hspace{1.2em}(a) Layer 1: 64-dim Character Embedding
   \State \hspace{1.2em}(b) Layer 2: \textbf{Conv1D (64 filters, kernel=3)} for spatial features
-  \State \hspace{1.2em}(c) Layer 3-4: Stacked Bidirectional LSTM (64 units each)
+  \State \hspace{1.2em}(c) Layer 3-4: CNN-BiLSTM Structure (Conv1D + 64 units each)
   \State \hspace{1.2em}(d) Output: Softmax activation for model-level probability distribution
 
 \end{algorithmic}
@@ -431,7 +454,7 @@ Finalizing the pipeline for real-world integration:
 \end{frame}
 
 \begin{frame}{Algorithm: Meta-Learner Stacking Ensemble (4/5)}
-\begin{algorithm}[htbp]
+\begin{algorithm}[H]
 \small
 \begin{algorithmic}
 
@@ -450,7 +473,7 @@ Finalizing the pipeline for real-world integration:
 \end{frame}
 
 \begin{frame}{Algorithm: Inference \& Persistence (5/5)}
-\begin{algorithm}[htbp]
+\begin{algorithm}[H]
 \small
 \begin{algorithmic}
 
@@ -497,7 +520,7 @@ Finalizing the pipeline for real-world integration:
 %----------------------------------------------------------------------------------------
 
 \begin{frame}{Implementation (1/5) - Titan-98 Data Engineering}
-
+\section{Implementation Details}
 \subsection{Massive Hybrid Data Sourcing}
 \begin{itemize}
     \item \textbf{Sources:} Integrated \textbf{Cisco Umbrella}, \textbf{Majestic Million}, \textbf{PhishTank}, and \textbf{CAPEC} datasets for a global threat profile.
@@ -532,7 +555,7 @@ Finalizing the pipeline for real-world integration:
 \subsection{Sequential & Spatial Feature Extraction}
 \begin{itemize}
     \item \textbf{Conv1D Layer:} Extracts local character motifs (3-gram sliding windows) to identify attack signatures.
-    \item \textbf{Stacked Bi-LSTM:} Two layers of \textbf{Bidirectional LSTMs} (64 units each) to capture long-range URL dependencies.
+    \item \textbf{CNN-BiLSTM:} Spatial-temporal layers \textbf{Conv1D + BiLSTMs} (64 units each) to capture local anomalies and long-range URL dependencies.
     \item \textbf{Regularization:} Integrated \textbf{SpatialDropout1D} and standard Dropout (0.2--0.3) for model robustness.
 \end{itemize}
 
@@ -572,7 +595,7 @@ Finalizing the pipeline for real-world integration:
 \end{itemize}
 \end{frame}
 
-
+\section{Testing phases}
 \begin{frame}{Testing Applicability and Strategy}
 
 \begin{table}[h]
@@ -581,12 +604,16 @@ Finalizing the pipeline for real-world integration:
 \begin{tabular}{|l|c|p{5cm}|}
 \hline
 \textbf{Testing Type} & \textbf{Applicable?} & \textbf{Reason and Scope} \\ \hline
+
 Unit Testing & $\checkmark$ Yes & 
 Crucial for verifying isolated helper functions such as URL normalization (\texttt{strip\_protocol}) and domain lookup (\texttt{is\_whitelisted}). \\ \hline
+
 Module Testing & $\checkmark$ Yes & 
 Validates self-contained security modules like the Static Heuristics Rules Engine before integrating AI models. \\ \hline
+
 Integration Testing & $\checkmark$ Yes & 
 Confirms complete request lifecycle from API call through Whitelist, Rules Engine, AI Models, and final API response. \\ \hline
+
 \end{tabular}
 \end{table}
 
@@ -603,15 +630,18 @@ Confirms complete request lifecycle from API call through Whitelist, Rules Engin
 \begin{tabular}{|p{0.8cm}|p{2.5cm}|p{3.2cm}|p{4.2cm}|p{1.2cm}|}
 \hline
 \textbf{Test \#} & \textbf{Test Name} & \textbf{Description} & \textbf{Test Code Snippet} & \textbf{Result} \\ \hline
+
 % Using \newline to force the break exactly where you want it
 1 & \texttt{test\_strip\_protocol} \newline \texttt{\_function} & 
 Verifies removal of \texttt{https://}, \texttt{http://}, and \texttt{www.} for domain normalization. & 
 \texttt{assertEqual(strip\_protocol( "https://www.fisat.ac.in"), "fisat.ac.in")} & 
 PASSED \\ \hline
+
 2 & \texttt{test\_whitelist\_} \newline \texttt{function} & 
 Verifies $O(1)$ HashMap whitelist detection of trusted and untrusted domains. & 
 \texttt{assertTrue(is\_whitelisted( "https://github.com/login"))} \newline \texttt{assertFalse(is\_whitelisted( "http://evil-hacker.in"))} & 
 PASSED \\ \hline
+
 \end{tabular}
 \end{table}
 
@@ -648,9 +678,9 @@ F1-Score & \textbf{97.66\%} \\
 \begin{frame}{Results (2/6): Confusion Matrix Analysis}
 \subsection{Detection Reliability}
 \begin{itemize}
-    \item \textbf{True Positives (Malicious):} Successfully identified 1,952 out of 2,000 attack URLs.
-    \item \textbf{False Positives (Benign):} Minimal noise with only 40 benign URLs flagged as malicious (1.0\% FP Rate).
-    \item \textbf{False Negatives:} Only 48 malicious URLs bypassed the ensemble (1.2\% FN Rate).
+    \item \textbf{True Positives (Malicious):} Successfully identified 1,923 out of 2,000 attack URLs.
+    \item \textbf{False Positives (Benign):} Minimal noise with only 15 benign URLs flagged as malicious (0.75\% FP Rate).
+    \item \textbf{False Negatives:} Only 77 malicious URLs bypassed the ensemble (3.85\% FN Rate).
     \item \textbf{Classification Depth:} The model successfully distinguishes between Phishing, Injection, and Manipulation categories.
 \end{itemize}
 \end{frame}
@@ -670,7 +700,7 @@ F1-Score & \textbf{97.66\%} \\
 \begin{figure}
     \centering
     \includegraphics[width=0.63\linewidth]{v6_confusion_matrix.png} 
-    \caption{Confusion Matrices for all layers showing minimal False Positives (7) for the Hybrid Ensemble.}
+    \caption{Confusion Matrices for all layers showing minimal False Positives (15) for the Hybrid Ensemble.}
     \label{fig:confusion-matrices}
 \end{figure}
 \end{frame}
@@ -701,7 +731,7 @@ F1-Score & \textbf{97.66\%} \\
 \end{itemize}
 \end{frame}
 
-% 
+% \section{Comparison with existing works}
 % \begin{frame}{Comparison with Existing Works}
 % \begin{itemize}
 %     \item \textbf{Single-Paradigm vs. Hybrid Multi-Model:}
@@ -724,7 +754,7 @@ F1-Score & \textbf{97.66\%} \\
 % \end{itemize}
 % \end{frame}
 
-% 
+% \section{Comparison with existing works}
 % \begin{frame}{Comparison with Existing Works}
 % \begin{table}[]
 % \centering
@@ -748,7 +778,7 @@ F1-Score & \textbf{97.66\%} \\
 % \end{itemize}
 % \end{frame}
 
-
+\section{Comparison with existing works}
 \begin{frame}{Comparison with Existing Works (Interactive)}
 \centering
 \small
@@ -757,12 +787,20 @@ F1-Score & \textbf{97.66\%} \\
 \begin{tabular}{|l|p{3cm}|c|c|c|p{2.5cm}|p{2.5cm}|}
 \hline
 \textbf{Work / Author} & \textbf{Methodology} & \textbf{Dataset} & \textbf{Acc.} & \textbf{F1} & \textbf{Pros} & \textbf{Cons} \\ \hline
+
 \textbf{Proposed Work} & \href{https://github.com/Kr0wd/webguard-extension}{\textbf{Hybrid Ensemble}} & \textbf{Titan-98 Mix} & \textbf{98.8\%} & \textbf{0.98} & \textbf{Adversarial Robustness} & \textbf{Multi-stage Latency} \\ \hline
+
 \textbf{Base Paper:} \newline \cite{zhou2025} Zhou et al. & Char-SVM \& CNN-BiLSTM & CSIC 2010 & 99.6\% & 0.99 & Unified char-embedding & Weak to Zero-Day drift \\ \hline
+
 \cite{sadhwani2026} Sadhwani et al. & Hybrid BiLSTM-CNN & IoT Traffic (IoTID20) & 96.2\% & 0.95 & High temporal depth & IoT domain specific \\ \hline
+
 \cite{sinha2020cnn} Sinha et al. & Efficient CNN-BiLSTM & NSL-KDD & 91.5\% & 0.91 & Low computational cost & Lacks payload analysis \\ \hline
+
 \cite{deepphish2018} Bahnsen et al. & DeepPhish (Malicious AI) & PhishTank (2018) & 92.4\% & 0.92 & Simulates Zero-Day Phish & Complex AI overhead \\ \hline
+
 \cite{zhang2015charcnn} Zhang et al. & Char-level CNN & AG News/DBPedia & 87.2\% & 0.85 & Scalable to large text & Slow convergence \\ \hline
+
+
 \end{tabular}
 }
 \end{frame}
@@ -781,7 +819,7 @@ F1-Score & \textbf{97.66\%} \\
 \end{itemize}
 \end{frame}
 
-
+\section{Publication details}
 % --- Slide 11d: Publication Details ---
 \begin{frame}{Publication Details}
     \begin{block}{Conference Acceptance}

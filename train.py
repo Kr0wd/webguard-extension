@@ -13,7 +13,7 @@ from sklearn.preprocessing import LabelEncoder, StandardScaler
 from sklearn.metrics import accuracy_score, classification_report
 import tensorflow as tf
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, Embedding, LSTM, SpatialDropout1D, Bidirectional, Dropout
+from tensorflow.keras.layers import Dense, Embedding, LSTM, SpatialDropout1D, Bidirectional, Dropout, Conv1D
 from tensorflow.keras.preprocessing.text import Tokenizer
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 from tensorflow.keras.callbacks import EarlyStopping
@@ -68,66 +68,66 @@ def extract_features(url):
     
     return np.array(f1).reshape(1, -1)
 
-# 1. 📂 LOAD DATASETS (Titan-98 Global Mix)
+# 1. 📂 LOAD DATASETS (Robust Multi-Source Mix)
 print("1. 📂 Loading Massive Datasets...")
 
-# Benign Pool (Cisco Umbrella + Majestic Million)
-df_benign_def = pd.read_csv('data/definitive_benign.csv').dropna(subset=['url'])
-df_benign_def['label'] = 'Normal'
-print(f"   ★ Benign: {len(df_benign_def)} URLs")
+all_dfs = []
 
-# Malicious Pool (Active Phishing Database)
-df_m_phish = pd.read_csv('data/definitive_malicious.csv').dropna(subset=['url'])
-df_m_phish['label'] = 'Phishing'
-print(f"   ★ Malicious: {len(df_m_phish)} URLs")
+def safe_load(path, label, rename_col=None):
+    if not os.path.exists(path):
+        print(f"   ⚠️ Warning: Missing {path}, skipping.")
+        return None
+    df = pd.read_csv(path).dropna()
+    if rename_col:
+        df = df.rename(columns={rename_col: 'url'})
+    if 'label' not in df.columns:
+        df['label'] = label
+    print(f"   ★ {label}: {len(df)} URLs from {os.path.basename(path)}")
+    return df[['url', 'label']]
 
-# PhishTank
-df_p = pd.read_csv('data/phishtank.csv').dropna(subset=['url'])
-df_p['label'] = 'Phishing'
-print(f"   ★ PhishTank: {len(df_p)} URLs")
+# Core Benign & Malicious
+df_b = safe_load('data/definitive_benign.csv', 'Normal')
+if df_b is not None: all_dfs.append(df_b)
 
-# CAPEC Injection/Manipulation Dataset
-df_capec = pd.read_csv('data/dataset_capec_combine.csv').dropna(subset=['text', 'category'])
-df_capec['url'] = df_capec['text']
-def label_granulate(x):
-    if x == 'Normal': return 'Normal'
-    if x in ['Injection', 'Manipulation']: return x
-    return 'Phishing'
-df_capec['label'] = df_capec['category'].apply(label_granulate)
-print(f"   ★ CAPEC: {len(df_capec)} URLs")
+df_m = safe_load('data/definitive_malicious.csv', 'Phishing')
+if df_m is not None: all_dfs.append(df_m)
 
-# New Unseen Dataset (Crucial for Bridging the 98% gap)
-df_unseen = pd.read_csv('data/new_unseen_dataset.csv').dropna()
-test_sample_urls = df_unseen.sample(n=min(1000, len(df_unseen)), random_state=99)['url'].tolist()
-df_unseen_train = df_unseen[~df_unseen['url'].isin(test_sample_urls)]
-print(f"   ★ Unseen (Train): {len(df_unseen_train)} URLs")
+df_p = safe_load('data/phishtank.csv', 'Phishing')
+if df_p is not None: all_dfs.append(df_p)
 
-# Merged Dataset
-df_merged = pd.read_csv('data/merged_urls_dataset.csv').dropna(subset=['url', 'label'])
-df_merged['label'] = df_merged['label'].map({'benign': 'Normal', 'phish': 'Phishing', 'malware': 'Manipulation'})
-print(f"   ★ Merged: {len(df_merged)} URLs")
+# New Unseen (Critical for Accuracy)
+df_u = safe_load('data/new_unseen_dataset.csv', 'Normal') # Labels are Normal/Phishing in this file, will override below
+if df_u is not None:
+    # Re-verify labels if they exist in the CSV
+    temp_df = pd.read_csv('data/new_unseen_dataset.csv')
+    if 'label' in temp_df.columns:
+        df_u['label'] = temp_df['label']
+    all_dfs.append(df_u)
+
+# Legacy / Optional
+df_capec = safe_load('data/dataset_capec_combine.csv', 'Injection', rename_col='text')
+if df_capec is not None: all_dfs.append(df_capec)
+
+df_merged = safe_load('data/merged_urls_dataset.csv', 'Normal')
+if df_merged is not None: all_dfs.append(df_merged)
+
+if not all_dfs:
+    raise FileNotFoundError("❌ CRITICAL: No datasets found in data/ directory!")
 
 # Combine All Sources
-df_all = pd.concat([
-    df_benign_def[['url', 'label']],
-    df_m_phish[['url', 'label']],
-    df_p[['url', 'label']],
-    df_capec[['url', 'label']],
-    df_unseen_train[['url', 'label']],
-    df_merged[['url', 'label']]
-]).drop_duplicates(subset=['url']).dropna()
+df_all = pd.concat(all_dfs).drop_duplicates(subset=['url']).dropna()
+print(f"📊 Combined Pool: {len(df_all)} unique URLs")
 
 # Final Dataset Preparation
 class_counts = df_all['label'].value_counts()
 print(f"📊 Balanced Counts: {dict(class_counts)}")
 
 # Stratified Sampling to keep sizes manageable but balanced
-min_attack = 50000 
 df_final = pd.concat([
-    df_all[df_all['label'] == 'Normal'].sample(n=min(class_counts['Normal'], 120000), random_state=42),
-    df_all[df_all['label'] == 'Phishing'].sample(n=min(class_counts['Phishing'], 80000), random_state=42),
-    df_all[df_all['label'] == 'Injection'].sample(n=min(class_counts['Injection'], class_counts['Injection']), random_state=42),
-    df_all[df_all['label'] == 'Manipulation'].sample(n=min(class_counts['Manipulation'], class_counts['Manipulation']), random_state=42)
+    df_all[df_all['label'] == 'Normal'].sample(n=min(class_counts.get('Normal', 0), 120000), random_state=42),
+    df_all[df_all['label'] == 'Phishing'].sample(n=min(class_counts.get('Phishing', 0), 80000), random_state=42),
+    df_all[df_all['label'] == 'Injection'].sample(n=min(class_counts.get('Injection', 0), class_counts.get('Injection', 0)), random_state=42) if 'Injection' in class_counts else pd.DataFrame(),
+    df_all[df_all['label'] == 'Manipulation'].sample(n=min(class_counts.get('Manipulation', 0), class_counts.get('Manipulation', 0)), random_state=42) if 'Manipulation' in class_counts else pd.DataFrame()
 ]).sample(frac=1, random_state=42).reset_index(drop=True)
 
 print(f"✅ Training Set: {len(df_final)} URLs")
@@ -160,6 +160,7 @@ X_train_seq, X_test_seq, y_train_seq, y_test_seq = train_test_split(X_seq, y_enc
 
 cnn = Sequential([
     Embedding(10001, 64, input_length=MAX_LEN),
+    Conv1D(filters=64, kernel_size=3, activation='relu', padding='same'),
     Bidirectional(LSTM(64, return_sequences=True)),
     Dropout(0.2),
     Bidirectional(LSTM(64)),

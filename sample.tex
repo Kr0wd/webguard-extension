@@ -50,7 +50,7 @@ Susan Joy (FIT22CS184)\\[0.5cm] % add space before date
 
 \begin{frame}{Abstract}
 \begin{itemize}
-    \item Implemented \textbf{Meta-WebGuard}, a multi-layered hybrid framework combining Calibrated SVM, \textbf{CNN-BiLSTM}, and an XGBoost Meta-Learner.
+    \item Implemented \textbf{Meta-WebGuard}, a multi-layered hybrid framework combining Calibrated SVM, CNN-BiLSTM, and an XGBoost Meta-Learner.
     \item Integrated a \textbf{Titan-98 Global Mix} dataset, bridging detection gaps using real-world "unseen" samples and CAPEC-aligned injection data.
     \item Developed a \textbf{Hybrid CNN-BiLSTM} architecture to capture both local spatial features and long-range sequential patterns.
     \item Achieved exceptional results: \textbf{98.81\% Ensemble Accuracy} and a record \textbf{99.23\% Precision} on 100\% unseen data samples.
@@ -293,7 +293,7 @@ SDG 17 strengthens global partnerships for sustainable development.
 \begin{frame}{System Architecture}
 \begin{figure}[h!]
    \centering
-  \includegraphics[width=0.67\textwidth]{system architecture.png}
+  \includegraphics[width=0.67\textwidth]{webguard_comprehensive_architecture.png}
   \captionsetup{skip=2pt} % local adjustment
   \caption{Architecture Diagram of Meta-WebGuard} \label{fig:system_architecture}
  \end{figure}
@@ -376,7 +376,6 @@ Rigorous testing against the "Unseen" data samples:
     \item \textbf{Trust Analysis:} Verified the effectiveness of the `HIGH\_TRUST\_DOMAINS` logic in reducing False Positives for major brands.
     \item \textbf{Complexity Analysis:} Balanced the computational cost of BiLSTMs with the speed of XGBoost.
 \end{itemize}
-
 
 \end{frame}
 
@@ -498,38 +497,20 @@ Finalizing the pipeline for real-world integration:
 % DATA FLOW DIAGRAMS
 %----------------------------------------------------------------------------------------
 
-\begin{frame}{Data Flow Diagrams (1/4)}
+\begin{frame}{Data Flow Diagrams (1/2) }
 \begin{figure}
     \centering
-    \includegraphics[width=0.7\linewidth]{p1.png}
-    \caption{Figure 1: DFD Level 0 - System Context}
+    \includegraphics[width=0.7\linewidth]{dataflow_diagram.png}
+    \caption{DFD Level 0 - System Context}
     \label{fig:dfd-level0}
 \end{figure}
 \end{frame}
 
-\begin{frame}{Data Flow Diagrams (2/4)}
+\begin{frame}{Data Flow Diagrams (2/2) }
 \begin{figure}
     \centering
-    \includegraphics[width=0.6\linewidth]{p2.png}
-    \caption{Figure 2: DFD Level 1 - Process Decomposition}
-    \label{fig:dfd-level1}
-\end{figure}
-\end{frame}
-
-\begin{frame}{Data Flow Diagrams (3/4)}
-\begin{figure}
-    \centering
-    \includegraphics[width=0.3\linewidth]{p3.png}
-    \caption{Figure 3: Activity Diagram - Web Attack Detection Flow}
-    \label{fig:activity-diagram}
-\end{figure}
-\end{frame}
-
-\begin{frame}{Data Flow Diagrams (4/4)}
-\begin{figure}
-    \centering
-    \includegraphics[width=0.7\linewidth]{p4.png}
-    \caption{Figure 4: Use Case Diagram - System Interactions}
+    \includegraphics[width=0.6\linewidth]{uml_diagram.png}
+    \caption{Use Case Diagram - System Interactions}
     \label{fig:usecase-diagram}
 \end{figure}
 \end{frame}
@@ -604,7 +585,7 @@ Finalizing the pipeline for real-world integration:
 \subsection{The Hybrid Decision Pipeline}
 \begin{itemize}
     \item \textbf{Meta-Ensemble:} Final classification driven by XGBoost arbitrator.
-    \item \textbf{Breakthrough Metrics:} Achieved **99.23\% Precision** and **98.81\% Ensemble Accuracy**.
+    \item \textbf{Breakthrough Metrics:} Achieved \textbf{99.23\% Precision} and \textbf{98.81\% Ensemble Accuracy}.
 \end{itemize}
 
 \subsection{System Integration}
@@ -728,7 +709,7 @@ F1-Score & \textbf{97.66\%} \\
 \subsection{Accuracy vs. Precision}
 \begin{figure}
     \centering
-    \includegraphics[width=0.85\linewidth]{v6_metrics_summary.png}
+    \includegraphics[width=0.77\linewidth]{v6_metrics_summary.png}
     \caption{Precision-focused results: Meta-Ensemble leads with \textbf{99.23\% Precision} on unseen data.}
     \label{fig:precision-vs-accuracy}
 \end{figure}
@@ -738,7 +719,8 @@ F1-Score & \textbf{97.66\%} \\
 \subsection{Precision-Recall-F1 Analysis}
 \begin{figure}
     \centering
-    \includegraphics[width=0.85\linewidth]{v6_precision_matrix.png} 
+    \includegraphics[width=0.77
+    \linewidth]{v6_precision_matrix.png} 
     \caption{WebGuard v6 Precision Matrix.}
     \label{fig:precision-matrix}
 \end{figure}
@@ -842,7 +824,7 @@ F1-Score & \textbf{97.66\%} \\
 \begin{frame}{Publication Details}
     \begin{block}{Conference Acceptance}
         \centering
-        This project has been submitted and accepted for publication at \\
+        This project has been submitted for publication at \\
         \vspace{0.1cm}
         \textbf{NCAICC 2026} \\
         (National Conference on Artificial Intelligence and Cognitive Computing)

@@ -405,7 +405,7 @@ Finalizing the pipeline for real-world integration:
     \State \quad Inject "New Unseen" dataset to bridge accuracy gaps
     \State \quad Normalize labels: Normal, Phishing, Injection, Manipulation
     
-    \State \textbf{Step 2: URL Normalization \& Cleaning}
+    \State \textbf{Step 2: URL Normalization and Cleaning}
     \State \quad Strip protocols (http/https) and 'www.' prefixes
     \State \quad Perform URL decoding (unquote) to expose payloads
     \State \quad Remove duplicates and perform stratified sampling
@@ -457,7 +457,7 @@ Finalizing the pipeline for real-world integration:
 \small
 \begin{algorithmic}
 
-  \State \textbf{Step 6: Feature Fusion \& Weighting}
+  \State \textbf{Step 6: Feature Fusion and Weighting}
   \State \hspace{1.2em}(a) Generate $P(class|SVM)$ and $P(class|CNN)$ probabilities
   \State \hspace{1.2em}(b) Concatenate: $[P_{svm}, P_{cnn}, HandFeats_{scaled}]$
   \State \hspace{1.2em}(c) Define Sample Weights: 2.5x penalty for Malicious URLs
@@ -480,13 +480,12 @@ Finalizing the pipeline for real-world integration:
   \State \hspace{1.2em}(a) Save 7-key pipeline components (pkl/keras formats)
   \State \hspace{1.2em}(b) Persist LabelEncoder for categorical mapping
 
-  \Procedure{ClassifyURL}{NewUrl}
-    \State 1. Extract Hand-crafted features + Brand Spoofing flag
-    \State 2. Transform URL via Vectorizer and Tokenizer
-    \State 3. Collect probabilities from SVM and BiLSTM
-    \State 4. \textbf{Final Decision:} XGBoost.predict($fused\_vector$)
-    \State \Return Predicted Label (Normal, Phishing, or Attack)
-  \EndProcedure
+  \State \textbf{ClassifyURL(NewUrl):}
+  \State \hspace{1.2em}1. Extract Hand-crafted features + Brand Spoofing flag
+  \State \hspace{1.2em}2. Transform URL via Vectorizer and Tokenizer
+  \State \hspace{1.2em}3. Collect probabilities from SVM and CNN-BiLSTM
+  \State \hspace{1.2em}4. \textbf{Final Decision:} XGBoost.predict($fused\_vector$)
+  \State \hspace{1.2em}\textbf{Return:} Predicted Label (Normal, Phishing, or Attack)
 
 \end{algorithmic}
 \end{algorithm}

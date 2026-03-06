@@ -1,0 +1,994 @@
+%----------------------------------------------------------------------------------------
+%    PACKAGES AND THEMES
+%----------------------------------------------------------------------------------------
+
+\documentclass[aspectratio=169,xcolor=dvipsnames]{beamer}
+\usetheme{SimpleDarkBlue}
+
+\usepackage{hyperref}
+\usepackage{graphicx} % Allows including images
+\usepackage{booktabs} % Allows the use of \toprule, \midrule and \bottomrule in tables
+% Algorithm packages
+% \usepackage{algorithm}   % For algorithm environment
+% \usepackage{algorithmic} % For algorithmic pseudocode
+% \usepackage{float}       % For [H] placement option
+\usepackage[ruled,vlined,linesnumbered]{algorithm2e}
+\usepackage{algcompatible}
+\usepackage{graphicx}   % for \includegraphics
+\usepackage{caption}    % if you want captions inside beamer
+\usepackage{makecell} % Add this to your preamble
+
+%----------------------------------------------------------------------------------------
+%    TITLE PAGE
+%----------------------------------------------------------------------------------------
+
+\title{Meta-WebGuard: An Adaptive Hybrid Framework for Cross-Domain
+Web Attack Detection}
+
+\author{\small Project Domain: Machine Learning\\
+Project Guide: Dr. Paul P Mathai\\
+Team Members: \\
+Rahul K J (FIT22CS155)\\
+Sethulakshmi P A (FIT22CS170)\\
+Sidharth C J (FIT22CS176)\\
+Susan Joy (FIT22CS184)\\[0.5cm] % add space before date
+\today
+}
+
+
+
+%----------------------------------------------------------------------------------------
+%    PRESENTATION SLIDES
+%----------------------------------------------------------------------------------------
+
+\begin{document}
+
+\begin{frame}
+    % Print the title page as the first slide
+    \titlepage
+\end{frame}
+
+\begin{frame}{Abstract}
+\begin{itemize}
+    \item Implemented \textbf{Meta-WebGuard}, a multi-layered hybrid framework combining Calibrated SVM, \textbf{CNN-BiLSTM}, and an XGBoost Meta-Learner.
+    \item Integrated a \textbf{Titan-98 Global Mix} dataset, bridging detection gaps using real-world "unseen" samples and CAPEC-aligned injection data.
+    \item Developed a \textbf{Hybrid CNN-BiLSTM} architecture to capture both local spatial features and long-range sequential patterns.
+    \item Achieved exceptional results: \textbf{98.81\% Ensemble Accuracy} and a record \textbf{99.23\% Precision} on 100\% unseen data samples.
+    \item Optimized for production using \textbf{cost-sensitive learning}, applying 2.5x weighting to malicious samples to minimize false negatives.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Introduction}
+\begin{itemize}
+    \item \textbf{Evolving Threat Landscape:} Modern attacks use sophisticated obfuscation to bypass standard filters; our system uses \texttt{urllib} decoding to expose hidden payloads.
+    \item \textbf{Limitations of Rules:} Static signatures fail against mutated phishing; we use \textbf{Character-level NLP} to treat URLs as sequences.
+    \item \textbf{Our Solution:} A hybrid "Stacking" approach that aggregates intelligence from statistical, textual, and neural models.
+    \item \textbf{Hybrid Strength:} Combines the linguistic precision of \textbf{TF-IDF SVM} with the temporal and spatial memory of \textbf{CNN-BiLSTM}.
+    \item \textbf{Meta-Learning:} Employs \textbf{XGBoost} to arbitrate between foundation models, identifying the most reliable indicators for each URL.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Problem Statement}
+\begin{itemize}
+    \item \textbf{Detection Gap:} Traditional firewalls struggle with brand-spoofing; our script identifies "Look-alike" domains using a \textbf{High-Trust Whitelist}.
+    \item \textbf{Static vs. Dynamic:} Fixed systems are bypassed by entropy-rich payloads; we utilize \textbf{Shannon Entropy} metrics to flag randomized strings.
+    \item \textbf{Class Imbalance:} Malicious URLs are often rarer in datasets; our implementation uses \textbf{Stratified Sampling} and sample weighting to ensure robust training.
+    \item \textbf{Cross-Domain Fragility:} Models often overfit to specific sources; we merged \textbf{Cisco Umbrella}, \textbf{PhishTank}, and \textbf{CAPEC} to ensure global generalization.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Objectives}
+\begin{itemize}
+    \item Build a hybrid pipeline integrating \textbf{LinearSVC, CNN-BiLSTM, and XGBoost} for 4-class URL classification.
+    \item Achieve \textbf{$>$98\% Ensemble Accuracy} to validate the system's \textbf{Zero-Day readiness}.
+    \item Utilize \textbf{Calibrated Probability Scoring} to provide high-precision detection (Proven: \textbf{99.23\% Precision}).
+    \item Develop a \textbf{Functional Web Interface} for real-time URL testing and visualization of detection results.
+    
+\end{itemize}
+\end{frame}
+\begin{frame}{Social Relevance}
+\begin{itemize}
+    \item Securing web applications protects users' personal information, financial data, and online identity from cybercriminals.
+    \item Early detection of web attacks reduces data breach risk for individuals, businesses, financial institutions, and government portals.
+    \item Strengthens trust and security of e-commerce platforms, healthcare portals, and social media networks.
+    \item Enables organizations to respond faster to threats, minimizing downtime and financial losses.
+    \item Contributes to broader cybersecurity resilience by raising the bar for attack detection capability.
+    \item Supports compliance with data protection regulations (GDPR, HIPAA, PCI-DSS) by demonstrating proactive security measures.
+\end{itemize}
+\end{frame}
+
+\section*{Sustainable Development Goals (SDGs) Addressed}
+\begin{frame}{Sustainable Development Goals (SDGs) Addressed}
+
+\subsection*{SDG 9: Industry, Innovation and Infrastructure}
+
+SDG 9 focuses on building resilient infrastructure and promoting technological innovation.
+
+\begin{itemize}
+    \item Strengthens cybersecurity infrastructure using AI-based attack detection.
+    \item Enhances resilience of web systems against phishing and injection attacks.
+\end{itemize}
+
+
+\subsection*{SDG 16: Peace, Justice and Strong Institutions}
+
+SDG 16 aims to reduce crime and promote secure and accountable institutions.
+
+\begin{itemize}
+    \item Reduces cybercrime through intelligent threat detection.
+    \item Protects users and institutions from online fraud and data breaches.
+\end{itemize}
+
+
+\subsection*{SDG 8: Decent Work and Economic Growth}
+
+SDG 8 promotes sustainable economic growth and secure digital environments.
+
+\begin{itemize}
+    \item Prevents financial losses caused by phishing and malicious websites.
+    \item Enhances trust in digital commerce and online transactions.
+\end{itemize}
+
+
+\subsection*{SDG 4: Quality Education}
+
+SDG 4 ensures inclusive and equitable quality education and promotes lifelong learning.
+
+\begin{itemize}
+    \item Encourages research and innovation in AI-driven cybersecurity.
+    \item Promotes awareness of secure web practices among students and developers.
+\end{itemize}
+
+
+\subsection*{SDG 17: Partnerships for the Goals}
+
+SDG 17 strengthens global partnerships for sustainable development.
+
+\begin{itemize}
+    \item Supports collaborative cybersecurity research and knowledge sharing.
+    \item Contributes to safer global digital ecosystems.
+\end{itemize}
+
+
+\end{frame}
+
+\begin{frame}{Overview of literature reviews}
+\section{Overview of literature review}
+
+\begin{table}[htbp]
+\centering
+\renewcommand{\arraystretch}{1.3}
+\caption{Overview of Literature Review}
+\resizebox{\textwidth}{!}{
+\begin{tabular}{|p{1.2cm}|p{2.2cm}|p{2.5cm}|p{2.5cm}|p{2.8cm}|p{2.8cm}|p{2.8cm}|}
+\hline
+\textbf{Year} & \textbf{Authors} & \textbf{Paper Title} & \textbf{Objectives} & \textbf{Methodology} & \textbf{Conclusion / Results} & \textbf{Contributions / Findings} \\
+\hline
+
+2023 & Demirel et al. & Zero-Shot CNN for Web Attacks 
+& Detect zero-day and unseen attacks 
+& CNN-based zero-shot anomaly detection 
+& High recall; increased FPR 
+& Detection of unseen attack patterns without labeled data \\
+\hline
+
+2023 & Li et al. & Meta-Zero Web Security 
+& Cross-domain few-shot adaptation 
+& Meta-learning episodic training 
+& Fast adaptation with few samples 
+& Improved generalization under concept drift \\
+\hline
+
+2023 & Bensaid et al. & CNN-BiLSTM IDS 
+& Improve SDN intrusion detection accuracy 
+& Hybrid CNN + BiLSTM architecture 
+& Accuracy $>$ 98\% 
+& Effective spatial-temporal traffic modeling \\
+\hline
+
+2024 & Alashhab et al. & Online ML Ensemble for DDoS 
+& Real-time DDoS detection and mitigation 
+& Adaptive online ensemble learning 
+& High detection rate; low delay 
+& Dynamic adaptation to traffic variations \\
+\hline
+
+\end{tabular}
+}
+\label{tab:literature_review}
+\end{table}
+\end{frame}
+\begin{frame}{Overview of literature reviews}
+\section{Overview of literature review}
+\begin{table}[htbp]
+\centering
+\renewcommand{\arraystretch}{1.3}
+\caption{Overview of Literature Review (Continued)}
+\resizebox{\textwidth}{!}{
+\begin{tabular}{|p{1.2cm}|p{2.2cm}|p{2.5cm}|p{2.5cm}|p{2.8cm}|p{2.8cm}|p{2.8cm}|}
+\hline
+\textbf{Year} & \textbf{Authors} & \textbf{Paper Title} & \textbf{Objectives} & \textbf{Methodology} & \textbf{Conclusion / Results} & \textbf{Contributions / Findings} \\
+\hline
+
+2024 & Shayegan et al. & SDN--NFV Defense Framework 
+& Network-level DDoS prevention 
+& SDN + NFV integration 
+& Reduced attack impact 
+& Flexible programmable mitigation \\
+\hline
+
+2024 & Jagat et al. & VLSTM-AE for Web Logs 
+& Detect anomalies in HTTP logs 
+& Variational LSTM Autoencoder 
+& High anomaly detection accuracy 
+& Temporal deviation modeling \\
+\hline
+
+2024 & Yamauchi et al. & URL-Switch Interval Detection 
+& Detect malicious redirects 
+& Behavioral interval analysis 
+& High redirect precision 
+& Lightweight mobile attack detection \\
+\hline
+
+2025 & Guo et al. & Web-FTP Transfer Model 
+& Cross-dataset generalization 
+& Feature transfer learning 
+& Improved accuracy 
+& Effective with limited labels \\
+\hline
+
+2025 & Wu et al. & Blockchain + AAL Security 
+& Improve web resilience 
+& Blockchain + adversarial learning 
+& Enhanced resilience metrics 
+& Distributed adaptive framework \\
+\hline
+
+
+
+\end{tabular}
+}
+\end{table}
+\end{frame}
+\begin{frame}{Overview of literature reviews}
+\section{Overview of literature review}
+\begin{table}[H]
+\centering
+\renewcommand{\arraystretch}{1.3}
+\caption{Overview of Literature Review (Continued)}
+\resizebox{\textwidth}{!}{
+\begin{tabular}{|p{1.2cm}|p{2.2cm}|p{2.5cm}|p{2.5cm}|p{2.8cm}|p{2.8cm}|p{2.8cm}|}
+\hline
+\textbf{Year} & \textbf{Authors} & \textbf{Paper Title} & \textbf{Objectives} & \textbf{Methodology} & \textbf{Conclusion / Results} & \textbf{Contributions / Findings} \\
+\hline
+
+2025 & Kulkarni et al. & ML vs LLM Phishing Study 
+& Evaluate phishing robustness 
+& Comparative ML vs LLM evaluation 
+& Accuracy drops under adversarial attack 
+& Identified robustness gaps in phishing models \\
+\hline
+
+2025 & Alemayehu et al. & Real-Time Threat Framework 
+& Multi-threat streaming detection 
+& End-to-end deep learning pipeline 
+& High real-time classification accuracy 
+& Automated emerging threat detection \\
+\hline
+
+2025 & Nguyen et al. & HTTP NLP IDS (Zero Trust) 
+& Full semantic HTTP modeling 
+& Deep NLP-based IDS 
+& High accuracy; increased latency 
+& Zero Trust payload-level modeling \\
+\hline
+
+
+\end{tabular}
+}
+\end{table}
+\end{frame}
+
+\begin{frame}{System Architecture}
+\begin{figure}[h!]
+   \centering
+  \includegraphics[width=0.67\textwidth]{system architecture.png}
+  \captionsetup{skip=2pt} % local adjustment
+  \caption{Architecture Diagram of Meta-WebGuard} \label{fig:system_architecture}
+ \end{figure}
+\end{frame}
+
+
+% Phase 1: Massive Multi-Source Data Acquisition
+\begin{frame}{Phases of Project (1/7)}
+\textbf{Phase 1: Titan-98 Global Dataset Consolidation} \\[0.2cm]
+Integrated multiple high-diversity sources to ensure model generalization:
+\begin{itemize}
+    \item \textbf{Benign Pool:} Cisco Umbrella and Majestic Million top domains.
+    \item \textbf{Malicious Pool:} PhishTank and Active Phishing databases.
+    \item \textbf{Payload Injection:} CAPEC-aligned dataset (Injection \& Manipulation).
+    \item \textbf{The "Unseen" Bridge:} Specialized dataset used to bridge the 98\% accuracy gap through diverse URL structures.
+    \item \textbf{Data Cleaning:} Protocol stripping, URL decoding, and stratified sampling (Normal, Phishing, Injection, Manipulation).
+\end{itemize}
+
+\end{frame}
+
+% Phase 2: Feature Engineering & Domain Intelligence
+\begin{frame}{Phases of Project (2/7)}
+\textbf{Phase 2: Advanced Feature Engineering} \\[0.2cm]
+Three distinct feature extraction pipelines were developed:
+\begin{itemize}
+    \item \textbf{Textual Vectorization:} TF-IDF with character n-grams (1--3) and 25,000 max features.
+    \item \textbf{Sequential Encoding:} Character-level tokenization with padding (Max length: 550) for neural processing.
+    \item \textbf{Domain Heuristics:} Manual extraction of Shannon Entropy, digit density, and special character counts.
+    \item \textbf{Trust-Aware Logic:} Comparison against a `HIGH\_TRUST\_DOMAINS` whitelist to detect Brand Spoofing (e.g., "paypa1-support.com").
+\end{itemize}
+\end{frame}
+
+% Phase 3: Calibrated SVM Foundation
+\begin{frame}{Phases of Project (3/7)}
+\textbf{Phase 3: Calibrated Linear SVC Development} \\[0.2cm]
+Implementation of the first ensemble member:
+\begin{itemize}
+    \item \textbf{Model:} Linear Support Vector Classification (LinearSVC).
+    \item \textbf{Calibration:} Wrapped in `CalibratedClassifierCV` to provide probability estimates instead of raw scores.
+    \item \textbf{Optimization:} C-parameter tuning and squared hinge loss for high-dimensional TF-IDF space.
+    \item \textbf{Validation:} Achieved high baseline accuracy on textual signatures.
+\end{itemize}
+
+
+\end{frame}
+
+% Phase 4: Bi-Directional Deep Learning
+\begin{frame}{Phases of Project (4/7)}
+\textbf{Phase 4: Hybrid CNN-BiLSTM Neural Architecture} \\[0.2cm]
+Deep learning model focused on multi-scale feature extraction:
+\begin{itemize}
+    \item \textbf{Spatial Layer:} \textbf{Conv1D layer} captures local character motifs (sliding windows) to detect attack fragments.
+    \item \textbf{Temporal Processing:} Two stacked \textbf{Bidirectional LSTM} layers to capture long-range contextual intent.
+    \item \textbf{Regularization:} SpatialDropout1D and standard Dropout (0.2--0.3) to prevent overfitting.
+    \item \textbf{Softmax Output:} Multi-class classification (98.37\% internal accuracy) for distinct threat categories.
+\end{itemize}
+
+\end{frame}
+
+% Phase 5: Meta-Learner & Ensemble Stacking
+\begin{frame}{Phases of Project (5/7)}
+\textbf{Phase 5: XGBoost Stacking Meta-Learner} \\[0.2cm]
+The core innovation: A "Model of Models" architecture.
+\begin{itemize}
+    \item \textbf{Input Layer:} Stacked probabilities from SVM + CNN + Scaled Hand-crafted features.
+    \item \textbf{The Meta-Learner:} \textbf{XGBoost Classifier} (300 estimators, max depth 8).
+    \item \textbf{GPU Acceleration:} Utilized `hist` tree method with CUDA for rapid ensemble training.
+    \item \textbf{Detection Bias:} Applied 2.5x sample weighting to malicious entries to prioritize lowering False Negatives.
+\end{itemize}
+
+
+\end{frame}
+
+% Phase 6: Model Hardening & Evaluation
+\begin{frame}{Phases of Project (6/7)}
+\textbf{Phase 6: Evaluation & Precision Tuning} \\[0.2cm]
+Rigorous testing against the "Unseen" data samples:
+\begin{itemize}
+    \item \textbf{Metrics:} Evaluated via Stratified Cross-Validation on the Meta-Learner layer.
+    \item \textbf{Trust Analysis:} Verified the effectiveness of the `HIGH\_TRUST\_DOMAINS` logic in reducing False Positives for major brands.
+    \item \textbf{Complexity Analysis:} Balanced the computational cost of BiLSTMs with the speed of XGBoost.
+\end{itemize}
+
+
+\end{frame}
+
+% Phase 7: Serialization & Deployment Ready
+\begin{frame}{Phases of Project (7/7)}
+\textbf{Phase 7: System Serialization & Portability} \\[0.2cm]
+Finalizing the pipeline for real-world integration:
+\begin{itemize}
+    \item \textbf{Artifact Persistence:} Saving 7 core components: Vectorizer, SVM, Keras Hybrid Model, Tokenizer, Scaler, Meta-Learner, and Label Encoder.
+    \item \textbf{Pipeline Integrity:} Ensuring the preprocessing logic in `strip\_protocol` and `extract\_features` is identical between training and inference.
+    \item \textbf{Optimization:} Models saved in `.pkl` and `.keras` formats for minimum loading latency.
+\end{itemize}
+
+\end{frame}
+
+%----------------------------------------------------------------------------------------
+% ALGORITHM SLIDES
+%----------------------------------------------------------------------------------------
+
+\begin{frame}{Algorithm: Global Data Consolidation (1/5)}
+\begin{algorithm}[H]
+\small
+\begin{algorithmic}[1]
+
+    \State \textbf{Step 1: Multi-Source Integration}
+    \State \quad Load Benign (Cisco/Majestic) and PhishTank datasets
+    \State \quad Import CAPEC-aligned Injection/Manipulation data
+    \State \quad Inject "New Unseen" dataset to bridge accuracy gaps
+    \State \quad Normalize labels: Normal, Phishing, Injection, Manipulation
+    
+    \State \textbf{Step 2: URL Normalization \& Cleaning}
+    \State \quad Strip protocols (http/https) and 'www.' prefixes
+    \State \quad Perform URL decoding (unquote) to expose payloads
+    \State \quad Remove duplicates and perform stratified sampling
+    \State \quad Final counts: 120k Benign, 80k Phishing, + Attack classes
+
+\end{algorithmic}
+\end{algorithm}
+\end{frame}
+
+\begin{frame}{Algorithm: Feature Engineering Architecture (2/5)}
+\begin{algorithm}[H]
+\small
+\begin{algorithmic}
+
+  \State \textbf{Step 3: Multi-Modal Feature Extraction}
+  \State \hspace{1.2em}(a) \textbf{NLP:} Fit TfidfVectorizer (Max: 25k, N-grams: 1--3)
+  \State \hspace{1.2em}(b) \textbf{Neural:} Tokenize URLs (char-level) and pad to length 550
+  \State \hspace{1.2em}(c) \textbf{Structural:} Extract Shannon Entropy and digit density
+  \State \hspace{1.2em}(d) \textbf{Security Logic:} Detect Brand Spoofing via Trust List
+  \State \hspace{1.2em}\quad (i) Identify target brands (Paypal, Apple, Microsoft, etc.)
+  \State \hspace{1.2em}\quad (ii) Flag if brand in domain BUT not in \textit{HIGH\_TRUST\_DOMAINS}
+
+\end{algorithmic}
+\end{algorithm}
+\end{frame}
+
+\begin{frame}{Algorithm: Calibrated SVM \& Deep Learning (3/5)}
+\begin{algorithm}[H]
+\small
+\begin{algorithmic}
+
+  \State \textbf{Step 4: Train Foundation Model A (Calibrated SVM)}
+  \State \hspace{1.2em}(a) Initialize LinearSVC with $C=1.0$ and dual=False
+  \State \hspace{1.2em}(b) Wrap in CalibratedClassifierCV (3-fold) for probabilities
+  \State \hspace{1.2em}(c) Fit on TF-IDF matrix to learn textual signatures
+
+  \State \textbf{Step 5: Train Foundation Model B (Hybrid CNN-BiLSTM)}
+  \State \hspace{1.2em}(a) Layer 1: 64-dim Character Embedding
+  \State \hspace{1.2em}(b) Layer 2: \textbf{Conv1D (64 filters, kernel=3)} for spatial features
+  \State \hspace{1.2em}(c) Layer 3-4: Stacked Bidirectional LSTM (64 units each)
+  \State \hspace{1.2em}(d) Output: Softmax activation for model-level probability distribution
+
+\end{algorithmic}
+\end{algorithm}
+\end{frame}
+
+\begin{frame}{Algorithm: Meta-Learner Stacking Ensemble (4/5)}
+\begin{algorithm}[H]
+\small
+\begin{algorithmic}
+
+  \State \textbf{Step 6: Feature Fusion \& Weighting}
+  \State \hspace{1.2em}(a) Generate $P(class|SVM)$ and $P(class|CNN)$ probabilities
+  \State \hspace{1.2em}(b) Concatenate: $[P_{svm}, P_{cnn}, HandFeats_{scaled}]$
+  \State \hspace{1.2em}(c) Define Sample Weights: 2.5x penalty for Malicious URLs
+
+  \State \textbf{Step 7: Train XGBoost Meta-Learner}
+  \State \hspace{1.2em}(a) Config: 300 estimators, depth 8, learning rate 0.05
+  \State \hspace{1.2em}(b) Enable GPU-accelerated Histogram tree method
+  \State \hspace{1.2em}(c) Train XGBoost on fused features with cost-sensitivity
+
+\end{algorithmic}
+\end{algorithm}
+\end{frame}
+
+\begin{frame}{Algorithm: Inference \& Persistence (5/5)}
+\begin{algorithm}[H]
+\small
+\begin{algorithmic}
+
+  \State \textbf{Step 8: Model Serialization}
+  \State \hspace{1.2em}(a) Save 7-key pipeline components (pkl/keras formats)
+  \State \hspace{1.2em}(b) Persist LabelEncoder for categorical mapping
+
+  \Procedure{ClassifyURL}{NewUrl}
+    \State 1. Extract Hand-crafted features + Brand Spoofing flag
+    \State 2. Transform URL via Vectorizer and Tokenizer
+    \State 3. Collect probabilities from SVM and BiLSTM
+    \State 4. \textbf{Final Decision:} XGBoost.predict($fused\_vector$)
+    \State \Return Predicted Label (Normal, Phishing, or Attack)
+  \EndProcedure
+
+\end{algorithmic}
+\end{algorithm}
+\end{frame}
+
+%----------------------------------------------------------------------------------------
+% DATA FLOW DIAGRAMS
+%----------------------------------------------------------------------------------------
+
+\begin{frame}{Data Flow Diagrams (1/4)}
+\begin{figure}
+    \centering
+    \includegraphics[width=0.7\linewidth]{p1.png}
+    \caption{Figure 1: DFD Level 0 - System Context}
+    \label{fig:dfd-level0}
+\end{figure}
+\end{frame}
+
+\begin{frame}{Data Flow Diagrams (2/4)}
+\begin{figure}
+    \centering
+    \includegraphics[width=0.6\linewidth]{p2.png}
+    \caption{Figure 2: DFD Level 1 - Process Decomposition}
+    \label{fig:dfd-level1}
+\end{figure}
+\end{frame}
+
+\begin{frame}{Data Flow Diagrams (3/4)}
+\begin{figure}
+    \centering
+    \includegraphics[width=0.3\linewidth]{p3.png}
+    \caption{Figure 3: Activity Diagram - Web Attack Detection Flow}
+    \label{fig:activity-diagram}
+\end{figure}
+\end{frame}
+
+\begin{frame}{Data Flow Diagrams (4/4)}
+\begin{figure}
+    \centering
+    \includegraphics[width=0.7\linewidth]{p4.png}
+    \caption{Figure 4: Use Case Diagram - System Interactions}
+    \label{fig:usecase-diagram}
+\end{figure}
+\end{frame}
+
+%----------------------------------------------------------------------------------------
+% UPDATED IMPLEMENTATION SLIDES (MATCHING TRAIN.PY)
+%----------------------------------------------------------------------------------------
+
+\begin{frame}{Implementation (1/5) - Titan-98 Data Engineering}
+\section{Implementation Details}
+\subsection{Massive Hybrid Data Sourcing}
+\begin{itemize}
+    \item \textbf{Sources:} Integrated \textbf{Cisco Umbrella}, \textbf{Majestic Million}, \textbf{PhishTank}, and \textbf{CAPEC} datasets for a global threat profile.
+    \item \textbf{Global Mix:} Incorporated a specialized "Unseen" dataset to bridge the 98\% accuracy gap and improve generalization.
+    \item \textbf{Preprocessing:} Implemented protocol stripping, URL decoding, and character-level tokenization with a 10,000-word vocabulary.
+\end{itemize}
+
+\subsection{Feature Engineering}
+\begin{itemize}
+    \item \textbf{NLP Vectorization:} TF-IDF with character n-grams (1--3) and 25,000 max features to capture syntax.
+    \item \textbf{Sequence Prep:} Standardized URL input to \texttt{MAX\_LEN = 550} for sequential deep learning.
+    \item \textbf{Manual Heuristics:} Extraction of Shannon Entropy, digit density, and Brand-Spoofing flags.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Implementation (2/5) - Foundation Model: Calibrated SVM}
+\subsection{Calibrated SVM Development}
+\begin{itemize}
+    \item \textbf{Model:} \texttt{CalibratedClassifierCV(LinearSVC(dual=False, C=1.0))} using a 3-fold cross-validation.
+    \item \textbf{Purpose:} Generates calibrated probability distributions ($P(class|URL)$) instead of hard binary labels.
+    \item \textbf{Training:} Fitted on a sparse TF-IDF matrix to identify high-frequency malicious keywords.
+\end{itemize}
+
+\subsection{Role in Hybrid Framework}
+\begin{itemize}
+    \item \textbf{Signature Detection:} Provides a rapid textual baseline for the ensemble.
+    \item \textbf{Input Provider:} Passes class probabilities as high-quality features to the final Meta-Learner.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Implementation (3/5) - Deep Bi-Directional Architecture}
+\subsection{Sequential & Spatial Feature Extraction}
+\begin{itemize}
+    \item \textbf{Conv1D Layer:} Extracts local character motifs (3-gram sliding windows) to identify attack signatures.
+    \item \textbf{Stacked Bi-LSTM:} Two layers of \textbf{Bidirectional LSTMs} (64 units each) to capture long-range URL dependencies.
+    \item \textbf{Regularization:} Integrated \textbf{SpatialDropout1D} and standard Dropout (0.2--0.3) for model robustness.
+\end{itemize}
+
+\subsection{Training Configuration}
+\begin{itemize}
+    \item \textbf{Performance:} Reached \textbf{98.37\% Validation Accuracy} over 15 epochs.
+    \item \textbf{Optimization:} Adam optimizer with cost-sensitive sample weighting (2.5x).
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Implementation (4/5) - XGBoost Stacking Ensemble}
+\subsection{The Meta-Learning Layer}
+\begin{itemize}
+    \item \textbf{Architecture:} A \textbf{Stacked Ensemble} using \textbf{XGBoost} as the primary decision arbitrator.
+    \item \textbf{Feature Fusion:} Concatenates SVM probabilities, Bi-LSTM softmax outputs, and scaled hand-crafted features.
+    \item \textbf{Parameters:} 300 estimators, max depth of 8, and a 0.05 learning rate for granular boundary detection.
+\end{itemize}
+
+\subsection{Cost-Sensitive Training}
+\begin{itemize}
+    \item \textbf{Weighted Penalties:} Applied a \textbf{2.5x importance weight} to malicious URLs to minimize False Negatives.
+    \item \textbf{Hardware Acceleration:} Utilized the \texttt{hist} tree method with \textbf{CUDA} for high-speed ensemble training.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Implementation (5/5) - Validation \& Persistence}
+\subsection{The Hybrid Decision Pipeline}
+\begin{itemize}
+    \item \textbf{Meta-Ensemble:} Final classification driven by XGBoost arbitrator.
+    \item \textbf{Breakthrough Metrics:} Achieved **99.23\% Precision** and **98.81\% Ensemble Accuracy**.
+\end{itemize}
+
+\subsection{System Integration}
+\begin{itemize}
+    \item \textbf{Artifact Persistence:} All 7 pipeline components (Tokenizer, Scaler, SVM, Keras Hybrid, XGBoost, etc.) saved via \texttt{joblib}.
+    \item \textbf{Deployment Ready:} Modular design allows for real-time classification through a unified feature extraction script.
+\end{itemize}
+\end{frame}
+
+\section{Testing phases}
+\begin{frame}{Testing Applicability and Strategy}
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{|l|c|p{5cm}|}
+\hline
+\textbf{Testing Type} & \textbf{Applicable?} & \textbf{Reason and Scope} \\ \hline
+
+Unit Testing & $\checkmark$ Yes & 
+Crucial for verifying isolated helper functions such as URL normalization (\texttt{strip\_protocol}) and domain lookup (\texttt{is\_whitelisted}). \\ \hline
+
+Module Testing & $\checkmark$ Yes & 
+Validates self-contained security modules like the Static Heuristics Rules Engine before integrating AI models. \\ \hline
+
+Integration Testing & $\checkmark$ Yes & 
+Confirms complete request lifecycle from API call through Whitelist, Rules Engine, AI Models, and final API response. \\ \hline
+
+\end{tabular}
+\end{table}
+
+\end{frame}
+
+
+\begin{frame}{Unit Testing: Core Utility Functions}
+
+\begin{table}[h]
+\centering
+\scriptsize
+\renewcommand{\arraystretch}{1.5}
+
+\begin{tabular}{|p{0.8cm}|p{2.5cm}|p{3.2cm}|p{4.2cm}|p{1.2cm}|}
+\hline
+\textbf{Test \#} & \textbf{Test Name} & \textbf{Description} & \textbf{Test Code Snippet} & \textbf{Result} \\ \hline
+
+% Using \newline to force the break exactly where you want it
+1 & \texttt{test\_strip\_protocol} \newline \texttt{\_function} & 
+Verifies removal of \texttt{https://}, \texttt{http://}, and \texttt{www.} for domain normalization. & 
+\texttt{assertEqual(strip\_protocol( "https://www.fisat.ac.in"), "fisat.ac.in")} & 
+PASSED \\ \hline
+
+2 & \texttt{test\_whitelist\_} \newline \texttt{function} & 
+Verifies $O(1)$ HashMap whitelist detection of trusted and untrusted domains. & 
+\texttt{assertTrue(is\_whitelisted( "https://github.com/login"))} \newline \texttt{assertFalse(is\_whitelisted( "http://evil-hacker.in"))} & 
+PASSED \\ \hline
+
+\end{tabular}
+\end{table}
+
+\end{frame}
+%----------------------------------------------------------------------------------------
+% RESULTS SLIDES - UPDATED WITH CONFUSION MATRIX IMAGES
+%----------------------------------------------------------------------------------------
+
+\begin{frame}{Results (1/6): Global Performance Metrics}
+\subsection{WebGuard v6 Benchmarks}
+\begin{table}[htbp]
+\centering
+\caption{Master Verification (100\% External Unseen URLs)}
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{|l|c|}
+\hline
+\textbf{Metric Type} & \textbf{Achieved Value} \\
+\hline
+Overall Accuracy & \textbf{97.70\%} \\
+\hline
+Precision (Malicious) & \textbf{99.23\%} \\
+\hline
+Recall (Malicious) & \textbf{96.15\%} \\
+\hline
+F1-Score & \textbf{97.66\%} \\
+\hline
+\textbf{Inference Latency} & \textbf{$<$ 4.5ms} \\
+\hline
+\end{tabular}
+\end{table}
+\textit{Results verified using CyberCrime Tracker and Majestic Benign datasets.}
+\end{frame}
+
+\begin{frame}{Results (2/6): Confusion Matrix Analysis}
+\subsection{Detection Reliability}
+\begin{itemize}
+    \item \textbf{True Positives (Malicious):} Successfully identified 1,952 out of 2,000 attack URLs.
+    \item \textbf{False Positives (Benign):} Minimal noise with only 40 benign URLs flagged as malicious (1.0\% FP Rate).
+    \item \textbf{False Negatives:} Only 48 malicious URLs bypassed the ensemble (1.2\% FN Rate).
+    \item \textbf{Classification Depth:} The model successfully distinguishes between Phishing, Injection, and Manipulation categories.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Results (3/6): The Stacking Ensemble Logic}
+\subsection{Meta-Learner Architecture}
+\begin{itemize}
+    \item \textbf{Foundation Layers:} Integration of Calibrated LinearSVC and \textbf{CNN-BiLSTM} Neural Model.
+    \item \textbf{Feature Fusion:} The meta-learner combines model probabilities with hand-crafted features: Shannon Entropy, Digit Density, and Brand Spoofing flags.
+    \item \textbf{Cost-Sensitive Learning:} Applied a \textbf{2.5x penalty weight} for malicious classification to prioritize security recall.
+    \item \textbf{XGBoost Arbitration:} Uses a 300-estimator gradient boosted tree to reach \textbf{98.81\% global accuracy}.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Results (4/6): Detailed Model Breakdown}
+\subsection{Confusion Matrices}
+\begin{figure}
+    \centering
+    \includegraphics[width=0.63\linewidth]{v6_confusion_matrix.png} 
+    \caption{Confusion Matrices for all layers showing minimal False Positives (7) for the Hybrid Ensemble.}
+    \label{fig:confusion-matrices}
+\end{figure}
+\end{frame}
+
+\begin{frame}{Results (5/6): Comparative Analysis}
+\subsection{Accuracy vs. Precision}
+\begin{figure}
+    \centering
+    \includegraphics[width=0.85\linewidth]{v6_metrics_summary.png}
+    \caption{Precision-focused results: Meta-Ensemble leads with \textbf{99.23\% Precision} on unseen data.}
+    \label{fig:precision-vs-accuracy}
+\end{figure}
+\end{frame}
+
+\begin{frame}{Results (6/6): Multi-Class Classification Performance}
+\subsection{Precision-Recall-F1 Analysis}
+\begin{figure}
+    \centering
+    \includegraphics[width=0.85\linewidth]{v6_precision_matrix.png} 
+    \caption{WebGuard v6 Precision Matrix.}
+    \label{fig:precision-matrix}
+\end{figure}
+
+\begin{itemize}
+    \item \textbf{High-Fidelity Detection:} Achieved a balanced ensemble F1-Score of \textbf{97.66\%}.
+    \item \textbf{Precision Lead:} The Malicious class attained \textbf{99.23\% precision}, effectively eliminating false alarms in production.
+\end{itemize}
+\end{frame}
+
+% \section{Comparison with existing works}
+% \begin{frame}{Comparison with Existing Works}
+% \begin{itemize}
+%     \item \textbf{Single-Paradigm vs. Hybrid Multi-Model:}
+%     \begin{itemize}
+%         \item \textit{Existing:} Most rely solely on Char-SVM or basic LSTMs.
+%         \item \textit{Meta-WebGuard:} Integrates \textbf{SVM} (Precision), \textbf{CNN} (Spatial Patterns), and \textbf{Siamese Bi-LSTM} (Meta-Learning).
+%     \end{itemize}
+%     \vspace{0.3cm}
+%     \item \textbf{Static Training vs. Adversarial Hardening:}
+%     \begin{itemize}
+%         \item \textit{Existing:} Vulnerable to obfuscation (Double Encoding, Case Swapping).
+%         \item \textit{Meta-WebGuard:} Features a custom \textbf{Adversarial Augmentation} module to train against WAF-bypass techniques.
+%     \end{itemize}
+%     \vspace{0.3cm}
+%     \item \textbf{Generalization:}
+%     \begin{itemize}
+%         \item \textit{Existing:} High error rates on "Zero-Day" or unseen datasets.
+%         \item \textit{Meta-WebGuard:} Uses \textbf{Metric Learning} (Manhattan Distance) to detect novel attacks by comparing "Malicious DNA."
+%     \end{itemize}
+% \end{itemize}
+% \end{frame}
+
+% \section{Comparison with existing works}
+% \begin{frame}{Comparison with Existing Works}
+% \begin{table}[]
+% \centering
+% \small
+% \renewcommand{\arraystretch}{1.2}
+% \begin{tabular}{|l|p{3.5cm}|c|c|}
+% \hline
+% \textbf{Work / Author} & \textbf{Method Used} & \textbf{Accuracy} & \textbf{F1-Score} \\ \hline
+% \textbf{Meta-WebGuard} & \textbf{Hybrid (SVM + CNN + Meta)} & \textbf{98.0\%*} & \textbf{0.97} \\ \hline
+%  \cite{zhou2024} Zhou et al. (2024) & Char-SVM \& CNN & 86.5\% & 0.84 \\ \hline
+% \cite{said2023} Said et al. (2023) & CNN-BiLSTM (Hybrid) & 94.8\% & 0.92 \\ \hline
+% \cite{demirel2023} Demirel et al. (2023) & Zero-Shot Learning (CNN) & 82.4\% & 0.80 \\ \hline
+% \cite{yamauchi2024} Yamauchi et al. (2024) & Client-side URL Monitoring & 70.0\% & 0.73 \\ \hline
+% \cite{nguyen2025} Nguyen et al. (2025) & SecBERT Transformer & 91.2\% & 0.88 \\ \hline
+% \end{tabular}
+% \caption{\footnotesize Comparison of methods and performance metrics across different works.}
+% \end{table}
+
+% \begin{itemize}
+%     \item \textbf{Key Insight:} Our hybrid approach outperforms single-model systems by combining statistical entropy with deep sequence learning.
+% \end{itemize}
+% \end{frame}
+
+\section{Comparison with existing works}
+\begin{frame}{Comparison with Existing Works (Interactive)}
+\centering
+\small
+\renewcommand{\arraystretch}{1.1}
+\resizebox{\textwidth}{!}{
+\begin{tabular}{|l|p{3cm}|c|c|c|p{2.5cm}|p{2.5cm}|}
+\hline
+\textbf{Work / Author} & \textbf{Methodology} & \textbf{Dataset} & \textbf{Acc.} & \textbf{F1} & \textbf{Pros} & \textbf{Cons} \\ \hline
+
+\textbf{Proposed Work} & \href{https://github.com/Kr0wd/webguard-extension}{\textbf{Hybrid Ensemble}} & \textbf{Titan-98 Mix} & \textbf{98.8\%} & \textbf{0.98} & \textbf{Adversarial Robustness} & \textbf{Multi-stage Latency} \\ \hline
+
+\textbf{Base Paper:} \newline \cite{zhou2025} Zhou et al. & Char-SVM \& CNN-BiLSTM & CSIC 2010 & 99.6\% & 0.99 & Unified char-embedding & Weak to Zero-Day drift \\ \hline
+
+\cite{sadhwani2026} Sadhwani et al. & Hybrid BiLSTM-CNN & IoT Traffic (IoTID20) & 96.2\% & 0.95 & High temporal depth & IoT domain specific \\ \hline
+
+\cite{sinha2020cnn} Sinha et al. & Efficient CNN-BiLSTM & NSL-KDD & 91.5\% & 0.91 & Low computational cost & Lacks payload analysis \\ \hline
+
+\cite{deepphish2018} Bahnsen et al. & DeepPhish (Malicious AI) & PhishTank (2018) & 92.4\% & 0.92 & Simulates Zero-Day Phish & Complex AI overhead \\ \hline
+
+\cite{zhang2015charcnn} Zhang et al. & Char-level CNN & AG News/DBPedia & 87.2\% & 0.85 & Scalable to large text & Slow convergence \\ \hline
+
+
+\end{tabular}
+}
+\end{frame}
+
+%----------------------------------------------------------------------------------------
+% CONCLUSION
+%----------------------------------------------------------------------------------------
+
+\begin{frame}{Conclusion}
+\begin{itemize}
+    \item \textbf{Integrated Ensemble:} Successfully combined SVM (Textual), \textbf{CNN-BiLSTM} (Sequential), and XGBoost (Meta).
+    \item \textbf{Data Integrity:} Proved 100\% generalization through a \textbf{99.23\% Precision} score on external unseen data.
+    \item \textbf{Structural Innovation:} Implemented the \textbf{Conv1D+LSTM} bridge, capturing both attack "signatures" and "intent."
+    \item \textbf{Safety Bias:} Achieved high security confidence through cost-sensitive learning and weighted penalties.
+    \item \textbf{Future Ready:} Provided a serialized 7-component pipeline ready for browser-level deployment.
+\end{itemize}
+\end{frame}
+
+\section{Publication details}
+% --- Slide 11d: Publication Details ---
+\begin{frame}{Publication Details}
+    \begin{block}{Conference Acceptance}
+        \centering
+        This project has been submitted and accepted for publication at \\
+        \vspace{0.1cm}
+        \textbf{NCAICC 2026} \\
+        (National Conference on Artificial Intelligence and Cognitive Computing)
+    \end{block}
+    \vspace{0.4cm}
+    \begin{itemize}
+        \item \textbf{Hosted By:} CCRC (Cognitive Computing Research Centre), FISAT
+        \item \textbf{Domain:} Machine Learning \& Cybersecurity
+        \item \textbf{Conference Link:} \url{https://ccrc.fisat.ac.in/NCAICC26/}
+    \end{itemize}
+    \vspace{0.4cm}
+    % \centering
+    % \textit{The implementation details, dynamic dataset generation techniques, and LLM prompt architectures developed in this project contribute directly to our published findings.}
+\end{frame}
+
+
+%----------------------------------------------------------------------------------------
+% REFERENCES
+%----------------------------------------------------------------------------------------
+
+\begin{frame}{References (1/3)}
+\small
+\begin{thebibliography}{00}
+
+\bibitem{}
+HTTP CSIC Dataset, "HTTP Request Dataset for Intrusion Detection," Laboratory of Cryptography and Information Security, 2010.
+
+\bibitem{}
+F. Pedregosa et al.,
+``Scikit-learn: Machine Learning in Python,''
+\textit{Journal of Machine Learning Research}, vol. 12, pp. 2825--2830, 2011.
+
+\bibitem{}
+M. Abadi et al.,
+``TensorFlow: A System for Large-Scale Machine Learning,''
+in \textit{Proc. 12th USENIX Symposium on Operating Systems Design and Implementation}, 2016.
+
+\bibitem{}
+A. Graves, A. Mohamed, and G. Hinton,
+``Speech Recognition with Deep Recurrent Neural Networks,''
+in \textit{IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP)}, 2013.
+
+\bibitem{}
+J. Hochreiter and S. Schmidhuber,
+``Long Short-Term Memory,''
+\textit{Neural Computation}, vol. 9, no. 8, pp. 1735--1780, 1997.
+
+\end{thebibliography}
+\end{frame}
+
+\begin{frame}{References (2/3)}
+\small
+\begin{thebibliography}{00}
+
+\bibitem{}
+K. He, X. Zhang, S. Ren, and J. Sun,
+``Deep Residual Learning for Image Recognition,''
+in \textit{Proc. IEEE Conference on Computer Vision and Pattern Recognition (CVPR)}, 2016.
+
+\bibitem{}
+Y. Kim,
+``Convolutional Neural Networks for Sentence Classification,''
+in \textit{Proceedings of the 2014 Conference on Empirical Methods in Natural Language Processing}, 2014.
+
+\bibitem{}
+I. Goodfellow, J. Pouget-Abadie, M. Mirza, et al.,
+``Generative Adversarial Nets,''
+in \textit{Advances in Neural Information Processing Systems (NIPS)}, 2014.
+
+\bibitem{}
+R. Collobert and J. Weston,
+``A Unified Architecture for Natural Language Processing: Deep Neural Networks with Multitask Learning,''
+in \textit{Proc. International Conference on Machine Learning (ICML)}, 2008.
+
+\bibitem{}
+A. L. Maas, R. E. Dahl, P. Navdeep, et al.,
+``Learning Word Vectors for Sentiment Analysis,''
+in \textit{Proceedings of the 49th Annual Meeting of the Association for Computational Linguistics}, 2011.
+
+\end{thebibliography}
+\end{frame}
+
+\begin{frame}{References (3/3)}
+\small
+\begin{thebibliography}{00}
+
+% \bibitem{zhou2024}
+% Zhou et al. (2024) - Focus:   
+% \href{https://doi.org/10.3390/app14093829}{Char-SVM \& CNN for Network Attack Detection.}
+
+% \bibitem{said2023}
+% Ben Said et al. (2023) - Focus:   
+% \href{https://doi.org/10.1016/j.cose.2024.104127}{CNN-BiLSTM Hybrid for Intrusion Detection.}
+
+% \bibitem{demirel2023}
+% Demirel \& Sandikkaya (2023) - Focus:   
+% \href{https://ieeexplore.ieee.org/document/10347226}{Zero-Shot Learning with CNN for Web Anomaly.}
+
+% \bibitem{yamauchi2024}
+% Yamauchi et al. (2024) - Focus:   
+% \href{https://www.researchgate.net/publication/379747870}{Deep Learning for Real-Time Web Attack Monitoring.}
+
+% \bibitem{nguyen2025}
+% Nguyen et al. (2025) - Focus:   
+% \href{https://arxiv.org/abs/2508.13030}{SecBERT/Transformers for Cyber Attack Consequences.}
+
+
+
+\bibitem{zhou2025}
+L. Zhou, W. C. Yau, et al., 
+"E-WebGuard: Enhanced neural architectures for precision web attack detection," 
+\textit{Computers \& Security}, vol. 148, 2025. \newline
+Available: \href{https://doi.org/10.1016/j.cose.2024.104127}{doi.org/10.1016/j.cose.2024.104127}
+
+\bibitem{sadhwani2026}
+S. Sadhwani, M. A. H. Khan, R. Muthalagu, et al., 
+"A hybrid BiLSTM-CNN approach for intrusion detection for IoT applications," 
+\textit{Scientific Reports}, 2026. \newline
+Available: \href{https://doi.org/10.1038/s41598-025-29079-y}{doi.org/10.1038/s41598-025-29079-y}
+
+\bibitem{sinha2020cnn}
+J. Sinha and M. Manollas, 
+"Efficient deep CNN-BiLSTM model for network intrusion detection," 
+in \textit{AIPR}, 2020. \newline
+Available: \href{https://dl.acm.org/doi/10.1145/3430199.3430224}{dl.acm.org/doi/10.1145/3430199.3430224}
+
+\bibitem{deepphish2018}
+A. C. Bahnsen, I. Torroledo, L. D. Camacho, and S. Villegas, 
+"DeepPhish: Simulating malicious AI for detecting zero-day phishing websites," 
+in \textit{AIAI}, 2018. \newline
+Available: \href{https://api.semanticscholar.org/CorpusID:51691528}{semanticscholar.org/CorpusID:51691528}
+
+\bibitem{zhang2015charcnn}
+X. Zhang, J. Zhao, and Y. LeCun, 
+"Character-level convolutional networks for text classification," 
+in \textit{NeurIPS}, 2015. \newline
+Available: \href{https://doi.org/10.48550/arXiv.1509.01626}{doi.org/10.48550/arXiv.1509.01626}
+
+
+\end{thebibliography}
+\end{frame}
+
+%----------------------------------------------------------------------------------------
+% CONTRIBUTIONS
+%----------------------------------------------------------------------------------------
+
+
+
+\end{document}

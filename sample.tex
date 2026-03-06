@@ -6,9 +6,7 @@
 \usetheme{SimpleDarkBlue}
 
 \usepackage{graphicx}   % for \includegraphics and \resizebox
-\usepackage{caption}    % if you want captions inside beamer
-\usepackage{makecell}   % for \makecell in tables
-\usepackage{tcolorbox}  % lightweight colored boxes for pseudocode
+\usepackage{booktabs}   % for table lines
 
 %----------------------------------------------------------------------------------------
 %    TITLE PAGE
@@ -388,7 +386,7 @@ Finalizing the pipeline for real-world integration:
 %----------------------------------------------------------------------------------------
 
 \begin{frame}{Algorithm: Global Data Consolidation (1/5)}
-\begin{tcolorbox}[colback=gray!8,colframe=blue!50!black,title=\textbf{Step 1 \& 2: Data Integration + Normalization},fonttitle=\small,left=4pt,right=4pt,top=4pt,bottom=4pt]
+\begin{block}{Step 1 \& 2: Data Integration + Normalization}
 \small
 \begin{itemize}
     \item Load Benign (Cisco/Majestic) and PhishTank datasets
@@ -398,11 +396,11 @@ Finalizing the pipeline for real-world integration:
     \item Strip protocols (http/https) and decode URL-encoded payloads
     \item Final counts: 120k Benign, 80k Phishing, + Attack classes
 \end{itemize}
-\end{tcolorbox}
+\end{block}
 \end{frame}
 
 \begin{frame}{Algorithm: Feature Engineering Architecture (2/5)}
-\begin{tcolorbox}[colback=gray!8,colframe=blue!50!black,title=\textbf{Step 3: Multi-Modal Feature Extraction},fonttitle=\small,left=4pt,right=4pt,top=4pt,bottom=4pt]
+\begin{block}{Step 3: Multi-Modal Feature Extraction}
 \small
 \begin{itemize}
     \item \textbf{(a) NLP:} Fit TfidfVectorizer (Max: 25k, N-grams: 1--3)
@@ -412,29 +410,28 @@ Finalizing the pipeline for real-world integration:
     \item[] \quad (i) Identify target brands (Paypal, Apple, Microsoft, etc.)
     \item[] \quad (ii) Flag if brand in domain but NOT in \textit{HIGH\_TRUST\_DOMAINS}
 \end{itemize}
-\end{tcolorbox}
+\end{block}
 \end{frame}
 
 \begin{frame}{Algorithm: Calibrated SVM \& Deep Learning (3/5)}
-\begin{tcolorbox}[colback=gray!8,colframe=blue!50!black,title=\textbf{Step 4 \& 5: Foundation Model Training},fonttitle=\small,left=4pt,right=4pt,top=4pt,bottom=4pt]
+\begin{block}{Step 4 \& 5: Foundation Model Training}
 \small
 \textbf{Model A -- Calibrated SVM:}
 \begin{itemize}
-    \item Initialize LinearSVC ($C=1.0$, dual=False), wrap in CalibratedClassifierCV
+    \item LinearSVC ($C=1.0$, dual=False) wrapped in CalibratedClassifierCV
     \item Fit on TF-IDF matrix to learn textual signatures
 \end{itemize}
 \textbf{Model B -- Hybrid CNN-BiLSTM:}
 \begin{itemize}
-    \item Layer 1: 64-dim Character Embedding
-    \item Layer 2: \textbf{Conv1D (64 filters, kernel=3)} for spatial features
-    \item Layer 3-4: Stacked Bidirectional LSTM (64 units each)
-    \item Output: Softmax activation for multi-class probability
+    \item Layer 1: 64-dim Embedding $\to$ Layer 2: \textbf{Conv1D (64 filters, kernel=3)}
+    \item Layer 3--4: Stacked Bidirectional LSTM (64 units each)
+    \item Output: Softmax for multi-class probability distribution
 \end{itemize}
-\end{tcolorbox}
+\end{block}
 \end{frame}
 
 \begin{frame}{Algorithm: Meta-Learner Stacking Ensemble (4/5)}
-\begin{tcolorbox}[colback=gray!8,colframe=blue!50!black,title=\textbf{Step 6 \& 7: Feature Fusion and XGBoost Training},fonttitle=\small,left=4pt,right=4pt,top=4pt,bottom=4pt]
+\begin{block}{Step 6 \& 7: Feature Fusion and XGBoost Training}
 \small
 \begin{itemize}
     \item \textbf{(a)} Generate $P(class|SVM)$ and $P(class|CNN\text{-}BiLSTM)$ probabilities
@@ -443,25 +440,21 @@ Finalizing the pipeline for real-world integration:
     \item \textbf{(d)} Train XGBoost (300 estimators, depth 8, lr 0.05)
     \item \textbf{(e)} Enable GPU Histogram tree method for fast training
 \end{itemize}
-\end{tcolorbox}
+\end{block}
 \end{frame}
 
 \begin{frame}{Algorithm: Inference \& Persistence (5/5)}
-\begin{tcolorbox}[colback=gray!8,colframe=blue!50!black,title=\textbf{Step 8: Model Serialization + ClassifyURL},fonttitle=\small,left=4pt,right=4pt,top=4pt,bottom=4pt]
+\begin{block}{Step 8: Serialization + ClassifyURL Procedure}
 \small
-\textbf{Serialization:}
-\begin{itemize}
-    \item Save 7-key pipeline components (pkl/keras formats)
-    \item Persist LabelEncoder for categorical mapping
-\end{itemize}
+\textbf{Serialization:} Save 7-key pipeline components (pkl/keras), persist LabelEncoder.\\[0.2cm]
 \textbf{ClassifyURL(NewUrl):}
 \begin{itemize}
     \item Extract hand-crafted features + Brand Spoofing flag
     \item Transform via Vectorizer and Tokenizer
-    \item Collect probabilities from SVM and CNN-BiLSTM
+    \item Collect $P(class|SVM)$ and $P(class|CNN\text{-}BiLSTM)$
     \item \textbf{Return:} XGBoost.predict($fused\_vector$) $\rightarrow$ Label
 \end{itemize}
-\end{tcolorbox}
+\end{block}
 \end{frame}
 
 %----------------------------------------------------------------------------------------

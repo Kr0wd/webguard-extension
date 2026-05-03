@@ -47,7 +47,7 @@ WHITELIST_SET = {
     "192.168.1.1", "192.168.1.254", "localhost", "127.0.0.1",
     "fisat.ac.in", "intranet.fisat.ac.in", "app.ktu.edu.in", "ktu.edu.in",
     "myntra.com", "docs.google.com", "drive.google.com", "script.google.com",
-    "forms.gle", "gemini.google.com", "whatsapp.com"
+    "forms.gle", "gemini.google.com", "whatsapp.com", "web.whatsapp.com"
 }
 print(
     f"✅ Loaded {

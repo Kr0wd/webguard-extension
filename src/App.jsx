@@ -12,7 +12,23 @@ function App() {
     if (typeof chrome !== 'undefined' && chrome.tabs) {
       chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
         if (tabs[0]) {
-          const url = tabs[0].url
+          const url = tabs[0].url;
+          
+          if (url.includes('block.html')) {
+            const urlParams = new URL(url);
+            const blockedUrl = urlParams.searchParams.get('url');
+            if (blockedUrl) {
+              setCurrentUrl(blockedUrl);
+              setPrediction({
+                is_dangerous: true,
+                reason: urlParams.searchParams.get('reason'),
+                confidence: parseFloat(urlParams.searchParams.get('confidence')) || 1.0
+              });
+              setLoading(false);
+              return;
+            }
+          }
+
           setCurrentUrl(url)
           checkUrl(url)
         }

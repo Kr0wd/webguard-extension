@@ -152,7 +152,7 @@ def create_comprehensive_architecture():
     draw_arrow((140, 85), (55, 85), "Final AI Decision\n", arc=False)
 
     plt.tight_layout()
-    output_path = "/home/krowd/webguard-extension/docs/webguard_comprehensive_architecture.png"
+    output_path = "webguard_comprehensive_architecture.png"
     plt.savefig(output_path, dpi=300, bbox_inches='tight')
     print(f"Diagram saved to {output_path}")
 

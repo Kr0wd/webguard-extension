@@ -6,9 +6,16 @@ import numpy as np
 import os
 import re
 from urllib.parse import unquote
-import tensorflow as tf
-from tensorflow.keras.models import load_model
-from tensorflow.keras.preprocessing.sequence import pad_sequences
+try:
+    import tensorflow as tf
+    from tensorflow.keras.models import load_model
+    from tensorflow.keras.preprocessing.sequence import pad_sequences
+    TF_AVAILABLE = True
+except ImportError:
+    TF_AVAILABLE = False
+    tf = None
+    def load_model(*args, **kwargs): return None
+    def pad_sequences(*args, **kwargs): return None
 
 # Initialize the Flask application
 app = Flask(__name__)
@@ -16,7 +23,8 @@ CORS(app)  # Enable Cross-Origin Resource Sharing
 
 # --- CONFIG ---
 MAX_LEN = 550
-tf.keras.config.enable_unsafe_deserialization()
+if TF_AVAILABLE:
+    tf.keras.config.enable_unsafe_deserialization()
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
@@ -38,7 +46,8 @@ print("🛡️ Initializing specific trusted internal Whitelist...")
 WHITELIST_SET = {
     "192.168.1.1", "192.168.1.254", "localhost", "127.0.0.1",
     "fisat.ac.in", "intranet.fisat.ac.in", "app.ktu.edu.in", "ktu.edu.in",
-    "myntra.com"
+    "myntra.com", "docs.google.com", "drive.google.com", "script.google.com",
+    "forms.gle", "gemini.google.com"
 }
 print(
     f"✅ Loaded {
@@ -216,18 +225,24 @@ def extract_features(url):
 # --- LOAD RESOURCES ---
 print("🚀 Initializing WebGuard Enhanced V4 Hybrid Engine...")
 try:
-    tokenizer = joblib.load(get_path('local_tokenizer.pkl'))
+    if TF_AVAILABLE:
+        tokenizer = joblib.load(get_path('local_tokenizer.pkl'))
+        cnn_model = load_model(get_path('local_hybrid_model.keras'))
+    else:
+        tokenizer, cnn_model = None, None
+    
     le = joblib.load(get_path('local_label_encoder.pkl'))
     vectorizer = joblib.load(get_path('local_vectorizer.pkl'))
     url_scaler = joblib.load(get_path('local_url_scaler.pkl'))
 
     svm_model = joblib.load(get_path('local_svm_model.pkl'))
-    cnn_model = load_model(get_path('local_hybrid_model.keras'))
     meta_model = joblib.load(get_path('local_meta_learner_global.pkl'))
 
     print("✅ All Hybrid Models Loaded Successfully")
     model_loaded = True
 except Exception as e:
+    import traceback
+    traceback.print_exc()
     print(f"❌ Critical Error Loading Models: {e}")
     model_loaded = False
 
@@ -462,11 +477,14 @@ def predict():
         X_vec = vectorizer.transform([clean_url])
         svm_proba = svm_model.predict_proba(X_vec)
 
-        seq = pad_sequences(
-            tokenizer.texts_to_sequences(
-                [clean_url]),
-            maxlen=MAX_LEN_CNN)
-        cnn_proba = cnn_model.predict(seq, verbose=0)
+        if TF_AVAILABLE:
+            seq = pad_sequences(
+                tokenizer.texts_to_sequences(
+                    [clean_url]),
+                maxlen=MAX_LEN_CNN)
+            cnn_proba = cnn_model.predict(seq, verbose=0)
+        else:
+            cnn_proba = np.copy(svm_proba)
 
         raw_feats = extract_features(clean_url)
         scaled_feats = url_scaler.transform(raw_feats)
@@ -481,7 +499,7 @@ def predict():
 
         # Dynamic Thresholds based on underlying domain context
         # Unknown/new domains need 65% confidence to block to prevent false positives
-        threshold = 0.85 if domain_root in HIGH_TRUST_DOMAINS else 0.65
+        threshold = 0.95 if domain_root in HIGH_TRUST_DOMAINS else 0.65
 
         # Check for brand spoofing BEFORE applying the short-domain leniency.
         # This ensures typosquats (paypa1.com, g00gle.com) never get a free pass.

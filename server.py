@@ -47,7 +47,7 @@ WHITELIST_SET = {
     "192.168.1.1", "192.168.1.254", "localhost", "127.0.0.1",
     "fisat.ac.in", "intranet.fisat.ac.in", "app.ktu.edu.in", "ktu.edu.in",
     "myntra.com", "docs.google.com", "drive.google.com", "script.google.com",
-    "forms.gle", "gemini.google.com"
+    "forms.gle", "gemini.google.com", "whatsapp.com"
 }
 print(
     f"✅ Loaded {
@@ -147,7 +147,8 @@ HIGH_TRUST_DOMAINS = {
     'box.com',
     'mfah.org',
     'allegro.pl',
-    'uni-bonn.de'}
+    'uni-bonn.de',
+    'whatsapp.com'}
 
 
 def extract_features(url):
@@ -436,7 +437,8 @@ def predict():
             'box.com',
             'mfah.org',
             'allegro.pl',
-            'uni-bonn.de'}
+            'uni-bonn.de',
+            'whatsapp.com'}
 
         # Safe static assets — regardless of domain
         if not rules_triggered and raw_url.lower().split('?')[0].endswith(

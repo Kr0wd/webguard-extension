@@ -1,14 +1,19 @@
 import math
+# pyrefly: ignore [missing-import]
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+# pyrefly: ignore [missing-import]
 import joblib
+# pyrefly: ignore [missing-import]
 import numpy as np
 import os
 import re
 from urllib.parse import unquote
 try:
+    # pyrefly: ignore [missing-import]
     import tensorflow as tf
     from tensorflow.keras.models import load_model
+    # pyrefly: ignore [missing-import]
     from tensorflow.keras.preprocessing.sequence import pad_sequences
     TF_AVAILABLE = True
 except ImportError:
@@ -49,9 +54,7 @@ WHITELIST_SET = {
     "myntra.com", "docs.google.com", "drive.google.com", "script.google.com",
     "forms.gle", "gemini.google.com", "whatsapp.com", "web.whatsapp.com"
 }
-print(
-    f"✅ Loaded {
-        len(WHITELIST_SET)} trusted internal domains into the shield.")
+print(f"✅ Loaded {len(WHITELIST_SET)} trusted internal domains into the shield.")
 
 
 def is_whitelisted(url):

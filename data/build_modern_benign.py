@@ -17,7 +17,7 @@ random.seed(42)
 
 # --- 1. Load Tranco top-50k domains ------------------------------------------
 print("📥 Loading Tranco top-50k...")
-with zipfile.ZipFile('tranco_top1m.zip') as z:
+with zipfile.ZipFile('top-1m.csv.zip') as z:
     with z.open(z.namelist()[0]) as f:
         df_tranco = pd.read_csv(f, header=None, names=['rank', 'domain'])
 
@@ -26,9 +26,13 @@ print(f"   {len(top50k)} Tranco domains loaded")
 
 # --- 2. Load Majestic Million top-10k -----------------------------------------
 print("📥 Loading Majestic Million top-10k...")
-df_maj = pd.read_csv('majestic_million.csv')
-top10k_maj = df_maj[df_maj['GlobalRank'] <= 10000]['Domain'].tolist()
-print(f"   {len(top10k_maj)} Majestic domains loaded")
+try:
+    df_maj = pd.read_csv('majestic_million.csv')
+    top10k_maj = df_maj[df_maj['GlobalRank'] <= 10000]['Domain'].tolist()
+    print(f"   {len(top10k_maj)} Majestic domains loaded")
+except Exception:
+    print("   Skipping Majestic domains")
+    top10k_maj = []
 
 # Combine unique domains
 all_trusted_domains = list(set(top50k + top10k_maj))
@@ -80,11 +84,13 @@ print(f"   Generated {len(modern_benign)} unique modern benign URLs")
 
 # --- 4. Sample from existing merged_urls benign (keep some for diversity) ----
 print("📥 Sampling existing benign pool...")
-df_merged = pd.read_csv('merged_urls_dataset.csv').dropna(subset=['url', 'label'])
-existing_benign = df_merged[df_merged['label'] == 'benign']['url'].sample(
-    n=30000, random_state=42
-).tolist()
-print(f"   {len(existing_benign)} existing benign URLs")
+try:
+    df_merged = pd.read_csv('merged_urls_dataset.csv').dropna(subset=['url', 'label'])
+    existing_benign = df_merged[df_merged['label'] == 'benign']['url'].sample(n=30000, random_state=42).tolist()
+    print(f"   {len(existing_benign)} existing benign URLs")
+except Exception:
+    print("   Skipping existing benign pool")
+    existing_benign = []
 
 # --- 5. Save combined modern benign dataset ----------------------------------
 all_benign = pd.DataFrame({

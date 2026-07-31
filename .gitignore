@@ -60,3 +60,7 @@ merged_urls_dataset.csv
 *.txt
 !requirements.txt
 !README.md
+
+venv/
+__pycache__/
+data/

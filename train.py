@@ -91,119 +91,81 @@ def safe_load(path, label, rename_col=None):
     print(f"   ★ {label}: {len(df)} URLs from {os.path.basename(path)}")
     return df[['url', 'label']]
 
-# Core Benign & Malicious
-df_b = safe_load('data/definitive_benign.csv', 'Normal')
-if df_b is not None: all_dfs.append(df_b)
+print("1. Loading Massive Dataset...")
+df_massive = pd.read_csv('data/massive_train.csv').dropna()
+print(f"📊 Massive Pool: {len(df_massive)} unique URLs")
 
-df_m = safe_load('data/definitive_malicious.csv', 'Phishing')
-if df_m is not None: all_dfs.append(df_m)
-
-df_p = safe_load('data/phishtank.csv', 'Phishing')
-if df_p is not None: all_dfs.append(df_p)
-
-# New Unseen (Critical for Accuracy)
-df_u = safe_load('data/new_unseen_dataset.csv', 'Normal') # Labels are Normal/Phishing in this file, will override below
-if df_u is not None:
-    # Re-verify labels if they exist in the CSV
-    temp_df = pd.read_csv('data/new_unseen_dataset.csv')
-    if 'label' in temp_df.columns:
-        df_u['label'] = temp_df['label']
-    all_dfs.append(df_u)
-
-# Legacy / Optional
-df_capec = safe_load('data/dataset_capec_combine.csv', 'Injection', rename_col='text')
-if df_capec is not None: all_dfs.append(df_capec)
-
-df_merged = safe_load('data/merged_urls_dataset.csv', 'Normal')
-if df_merged is not None: all_dfs.append(df_merged)
-
-if not all_dfs:
-    raise FileNotFoundError("❌ CRITICAL: No datasets found in data/ directory!")
-
-# Combine All Sources
-df_all = pd.concat(all_dfs).drop_duplicates(subset=['url']).dropna()
-print(f"📊 Combined Pool: {len(df_all)} unique URLs")
-
-# Final Dataset Preparation
-class_counts = df_all['label'].value_counts()
+class_counts = df_massive['label'].value_counts()
 print(f"📊 Balanced Counts: {dict(class_counts)}")
 
-# Stratified Sampling to keep sizes manageable but balanced
-df_final = pd.concat([
-    df_all[df_all['label'] == 'Normal'].sample(n=min(class_counts.get('Normal', 0), 120000), random_state=42),
-    df_all[df_all['label'] == 'Phishing'].sample(n=min(class_counts.get('Phishing', 0), 80000), random_state=42),
-    df_all[df_all['label'] == 'Injection'].sample(n=min(class_counts.get('Injection', 0), class_counts.get('Injection', 0)), random_state=42) if 'Injection' in class_counts else pd.DataFrame(),
-    df_all[df_all['label'] == 'Manipulation'].sample(n=min(class_counts.get('Manipulation', 0), class_counts.get('Manipulation', 0)), random_state=42) if 'Manipulation' in class_counts else pd.DataFrame()
-]).sample(frac=1, random_state=42).reset_index(drop=True)
+urls = df_massive['url'].astype(str).tolist()
+raw_labels = df_massive['label'].tolist()
 
-print(f"✅ Training Set: {len(df_final)} URLs")
-
-urls = df_final['url'].astype(str).tolist()
-raw_labels = df_final['label'].values
-texts = [strip_protocol(urllib.parse.unquote(u)) for u in urls]
-
-print("2. 🧠 Training Foundation Models (TF-IDF + SVM)...")
-vectorizer = TfidfVectorizer(max_features=25000, ngram_range=(1,3))
-X_tfidf = vectorizer.transform(texts) if hasattr(vectorizer, 'vocabulary_') else vectorizer.fit_transform(texts)
+# --- STRICLY ISOLATE HOLDOUT SET (NO DATA LEAKAGE) ---
+print("1.5 🔒 Isolating Holdout Set...")
+urls_train, urls_val, labels_train, labels_val = train_test_split(
+    urls, raw_labels, test_size=0.15, stratify=raw_labels, random_state=42
+)
+texts_train = [strip_protocol(urllib.parse.unquote(u)) for u in urls_train]
+texts_val = [strip_protocol(urllib.parse.unquote(u)) for u in urls_val]
 
 le = LabelEncoder()
-y_enc = le.fit_transform(raw_labels)
+y_train_enc = le.fit_transform(labels_train)
+y_val_enc = le.transform(labels_val)
+
+print("2. 🧠 Training Foundation Models (TF-IDF + SVM)...")
+vectorizer = TfidfVectorizer(max_features=50000, analyzer='char', ngram_range=(3,5))
+X_train_tfidf = vectorizer.fit_transform(texts_train)
+X_val_tfidf = vectorizer.transform(texts_val)
 
 from sklearn.svm import LinearSVC
-X_train_v, X_test_v, y_train_v, y_test_v = train_test_split(X_tfidf, y_enc, test_size=0.1, stratify=y_enc, random_state=42)
-svm = CalibratedClassifierCV(LinearSVC(C=1.0, max_iter=1000, dual=False), cv=3)
-svm.fit(X_train_v, y_train_v)
-print(f"   ★ SVM Val Accuracy: {svm.score(X_test_v, y_test_v):.4f}")
+svm = CalibratedClassifierCV(LinearSVC(C=1.0, max_iter=2000, dual=False), cv=3)
+svm.fit(X_train_tfidf, y_train_enc)
+print(f"   ★ SVM Val Accuracy: {svm.score(X_val_tfidf, y_val_enc):.4f}")
 
 print("3. 🧠 Training CNN Model...")
-tokenizer = Tokenizer(num_words=10000, char_level=True, oov_token='<OOV>')
-tokenizer.fit_on_texts(texts)
-MAX_LEN = 550
-sequences = tokenizer.texts_to_sequences(texts)
-X_seq = pad_sequences(sequences, maxlen=MAX_LEN)
-
-X_train_seq, X_test_seq, y_train_seq, y_test_seq = train_test_split(X_seq, y_enc, test_size=0.1, stratify=y_enc, random_state=42)
+tokenizer = Tokenizer(num_words=20000, char_level=True, oov_token='<OOV>')
+tokenizer.fit_on_texts(texts_train)
+MAX_LEN = 200
+X_train_seq = pad_sequences(tokenizer.texts_to_sequences(texts_train), maxlen=MAX_LEN)
+X_val_seq = pad_sequences(tokenizer.texts_to_sequences(texts_val), maxlen=MAX_LEN)
 
 cnn = Sequential([
-    Embedding(10001, 64, input_length=MAX_LEN),
-    Conv1D(filters=64, kernel_size=3, activation='relu', padding='same'),
-    Bidirectional(LSTM(64, return_sequences=True)),
-    Dropout(0.2),
-    Bidirectional(LSTM(64)),
-    Dense(64, activation='relu'),
+    Embedding(20001, 64, input_length=MAX_LEN),
+    Conv1D(filters=64, kernel_size=5, activation='relu', padding='same'),
+    SpatialDropout1D(0.2),
+    Bidirectional(LSTM(32, return_sequences=True)),
     Dropout(0.3),
+    Bidirectional(LSTM(32)),
+    Dense(64, activation='relu'),
+    Dropout(0.4),
     Dense(len(le.classes_), activation='softmax')
 ])
 cnn.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
-cnn.fit(X_train_seq, y_train_seq, epochs=15, batch_size=128, validation_data=(X_test_seq, y_test_seq), verbose=1)
+early_stop = EarlyStopping(monitor='val_loss', patience=2, restore_best_weights=True)
+cnn.fit(X_train_seq, y_train_enc, epochs=10, batch_size=512, validation_data=(X_val_seq, y_val_enc), callbacks=[early_stop], verbose=1)
 
 print("4. 🧠 Training Meta-Learner (XGBoost)...")
-svm_probs = svm.predict_proba(X_tfidf)
-cnn_probs = cnn.predict(X_seq, batch_size=256)
+svm_probs_train = svm.predict_proba(X_train_tfidf)
+cnn_probs_train = cnn.predict(X_train_seq, batch_size=512)
+svm_probs_val = svm.predict_proba(X_val_tfidf)
+cnn_probs_val = cnn.predict(X_val_seq, batch_size=512)
 
-hand_feats = []
-for u in urls:
-    hand_feats.append(extract_features(u).flatten())
-hand_feats = np.array(hand_feats)
+hand_feats_train = np.array([extract_features(u).flatten() for u in urls_train])
+hand_feats_val = np.array([extract_features(u).flatten() for u in urls_val])
+
 scaler = StandardScaler()
-hand_feats_scaled = scaler.fit_transform(hand_feats)
+hand_feats_train_scaled = scaler.fit_transform(hand_feats_train)
+hand_feats_val_scaled = scaler.transform(hand_feats_val)
 
-X_meta = np.hstack([svm_probs, cnn_probs, hand_feats_scaled])
+X_meta_train = np.hstack([svm_probs_train, cnn_probs_train, hand_feats_train_scaled])
+X_meta_val = np.hstack([svm_probs_val, cnn_probs_val, hand_feats_val_scaled])
 
-# Meta-Learner Sample Weights: Penalize False Negatives heavily
-sample_weights = np.ones(len(y_enc))
-for i, label in enumerate(raw_labels):
-    if label != 'Normal':
-        sample_weights[i] = 2.5 # 2.5x importance for malicious URLs
-
-X_train_m, X_test_m, y_train_m, y_test_m, w_train_m, w_test_m = train_test_split(
-    X_meta, y_enc, sample_weights, test_size=0.15, stratify=y_enc, random_state=42
-)
-
-xgb_model = xgb.XGBClassifier(n_estimators=300, max_depth=8, learning_rate=0.05, tree_method='hist', device='cuda')
-xgb_model.fit(X_train_m, y_train_m, sample_weight=w_train_m)
-y_pred_m = xgb_model.predict(X_test_m)
-print(f"   ★ Meta-Learner Accuracy: {accuracy_score(y_test_m, y_pred_m):.4f}")
+# Let XGBoost handle class imbalance natively
+xgb_model = xgb.XGBClassifier(n_estimators=400, max_depth=10, learning_rate=0.03, tree_method='hist')
+xgb_model.fit(X_meta_train, y_train_enc)
+y_pred_val = xgb_model.predict(X_meta_val)
+print(f"   ★ Meta-Learner Accuracy: {accuracy_score(y_val_enc, y_pred_val):.4f}")
 
 print("5. 💾 Saving All Models...")
 joblib.dump(vectorizer, 'models/local_vectorizer.pkl')

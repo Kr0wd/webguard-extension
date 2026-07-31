@@ -196,24 +196,41 @@ def predict_url(raw_url):
 
 # ── Load Mixed Dataset ────────────────────────────────────────────────────────
 print("\n📂 Loading mixed unseen datasets...")
+pool_phish, pool_malware, pool_benign, pool_clean = [], [], [], []
+
 # Source 1: PhishTank (Phishing)
-df_phish = pd.read_csv('data/phishtank.csv').dropna(subset=['url'])
-pool_phish = [{'url': u, 'label': 1, 'source': 'PhishTank'} for u in df_phish['url'].sample(n=min(1000, len(df_phish)), random_state=42)]
+try:
+    df_phish = pd.read_csv('data/verified_online.csv').dropna(subset=['url'])
+    pool_phish = [{'url': u, 'label': 1, 'source': 'PhishTank'} for u in df_phish['url'].sample(n=min(1000, len(df_phish)), random_state=42)]
+except Exception as e:
+    print(f"⚠️ Skipping PhishTank: {e}")
 
 # Source 2: UrlHaus Recent (Malware)
-df_urlhaus = pd.read_csv('data/urlhaus_recent.csv', comment='#', header=None, quoting=1)
-pool_malware = [{'url': u, 'label': 1, 'source': 'UrlHaus'} for u in df_urlhaus[2].sample(n=min(1000, len(df_urlhaus)), random_state=42)]
+try:
+    df_urlhaus = pd.read_csv('data/urlhaus_recent.csv', comment='#', header=None, quoting=1)
+    pool_malware = [{'url': u, 'label': 1, 'source': 'UrlHaus'} for u in df_urlhaus[2].sample(n=min(1000, len(df_urlhaus)), random_state=42)]
+except Exception as e:
+    print(f"⚠️ Skipping UrlHaus: {e}")
 
 # Source 3: Modern Benign Dataset
-df_modern = pd.read_csv('data/modern_benign_dataset.csv').dropna(subset=['url'])
-pool_benign = [{'url': u, 'label': 0, 'source': 'Modern Benign'} for u in df_modern['url'].sample(n=min(1000, len(df_modern)), random_state=42)]
+try:
+    df_modern = pd.read_csv('data/modern_benign_dataset.csv').dropna(subset=['url'])
+    pool_benign = [{'url': u, 'label': 0, 'source': 'Modern Benign'} for u in df_modern['url'].sample(n=min(1000, len(df_modern)), random_state=42)]
+except Exception as e:
+    print(f"⚠️ Skipping Modern Benign: {e}")
 
 # Source 4: Majestic Benign (Clean Traffic)
-df_majestic = pd.read_csv('data/majestic_benign_200k.csv').dropna(subset=['url'])
-pool_clean = [{'url': u, 'label': 0, 'source': 'Majestic Benign'} for u in df_majestic['url'].sample(n=min(1000, len(df_majestic)), random_state=42)]
+try:
+    df_majestic = pd.read_csv('data/majestic_benign_200k.csv').dropna(subset=['url'])
+    pool_clean = [{'url': u, 'label': 0, 'source': 'Majestic Benign'} for u in df_majestic['url'].sample(n=min(1000, len(df_majestic)), random_state=42)]
+except Exception as e:
+    print(f"⚠️ Skipping Majestic Benign: {e}")
 
 # Combine all 
 test_pool = pool_phish + pool_malware + pool_benign + pool_clean
+if not test_pool:
+    print("❌ No datasets loaded. Exiting.")
+    exit(1)
 import random
 random.seed(42)
 random.shuffle(test_pool)
